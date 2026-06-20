@@ -166,43 +166,148 @@ async def add_medication(
     frequency: str,
     times: str,
     notes: str = "",
+    confirmed: bool = False,
 ) -> str:
     """Add a new medication to a user's tracking regimen.
 
-    Use this tool when a user wants to start tracking a new medication.
-    The medication will appear in their daily schedule and adherence reports.
+    ⚠️ SAFETY: This tool automatically performs TWO safety checks before adding:
+      1. DUPLICATE CHECK — scans existing medications for the same name/times
+      2. FDA DOSE VALIDATION — queries the openFDA API for standard dosage info
 
-    ⚕️ MEDICAL DISCLAIMER: Adding a medication here does NOT constitute a
-    prescription. This is purely for personal tracking purposes.
+    If either check raises concerns, the tool returns a WARNING response with
+    'requires_confirmation': true. The agent MUST show the warnings to the user
+    and ask for confirmation. Then call this tool again with confirmed=true.
 
     Args:
-        user_id: Unique identifier for the user (e.g., 'user_123').
-        name: Medication name exactly as prescribed (e.g., 'Lisinopril',
-              'Metformin HCl', 'Vitamin D3').
-        dosage: Dosage amount with units (e.g., '10mg', '500mg', '2 tablets',
-                '5ml').
-        frequency: Human-readable frequency (e.g., 'once daily', 'twice daily',
-                   'every 8 hours', 'as needed').
-        times: Comma-separated scheduled times in 24-hour HH:MM format.
-               Examples: '08:00' for once daily, '08:00,20:00' for twice daily,
-               '06:00,14:00,22:00' for three times daily.
-        notes: Optional notes about the medication (e.g., 'take with food',
-               'avoid grapefruit juice', 'store in refrigerator').
+        user_id: Unique identifier for the user (e.g., 'default_user').
+        name: Medication name (e.g., 'Lisinopril', 'Metformin').
+        dosage: Dosage with units (e.g., '10mg', '500mg', '2 tablets').
+        frequency: How often (e.g., 'once daily', 'twice daily').
+        times: Comma-separated 24hr times (e.g., '08:00' or '08:00,20:00').
+        notes: Optional notes (e.g., 'take with food').
+        confirmed: Set to true ONLY after the user has seen and acknowledged
+                   any warnings. Do NOT set this to true on the first call.
 
     Returns:
-        JSON string containing the created medication record with its
-        unique ID, which is needed for logging doses and other operations.
-
-    Example:
-        add_medication('user1', 'Lisinopril', '10mg', 'once daily', '08:00',
-                       'Take on empty stomach')
+        JSON with either:
+        - 'requires_confirmation': true + warnings (if issues found)
+        - 'status': 'success' + medication data (if clean or confirmed)
     """
     await _ensure_db()
     try:
-        # Parse comma-separated times string into a list
-        # e.g., "08:00,20:00" → ["08:00", "20:00"]
         times_list = [t.strip() for t in times.split(",")]
+        warnings = []
 
+        # ─── SAFETY CHECK 1: Duplicate detection ─────────────────────
+        if not confirmed:
+            existing = await db.list_medications(user_id)
+            for med in existing:
+                if med.name.lower() == name.lower():
+                    existing_times = ",".join(med.times) if med.times else "unknown"
+                    requested_times = ",".join(times_list)
+                    if existing_times == requested_times:
+                        warnings.append({
+                            "type": "duplicate_exact",
+                            "message": (
+                                f"⚠️ DUPLICATE: You already have {med.name} "
+                                f"({med.dosage}) scheduled at {existing_times}. "
+                                f"Adding this would create an identical duplicate."
+                            ),
+                        })
+                    else:
+                        warnings.append({
+                            "type": "duplicate_different_time",
+                            "message": (
+                                f"📋 NOTE: You already have {med.name} "
+                                f"({med.dosage}) at {existing_times}. "
+                                f"You're adding a new schedule at {requested_times}."
+                            ),
+                        })
+                elif med.name.lower() in name.lower() or name.lower() in med.name.lower():
+                    warnings.append({
+                        "type": "similar_name",
+                        "message": (
+                            f"🔍 SIMILAR: You have '{med.name}' — is '{name}' "
+                            f"a different formulation or did you mean to update "
+                            f"the existing one?"
+                        ),
+                    })
+
+        # ─── SAFETY CHECK 2: FDA dose validation ─────────────────────
+        if not confirmed:
+            import urllib.request
+            import urllib.parse
+            import urllib.error
+
+            try:
+                query = urllib.parse.quote(name)
+                url = (
+                    f"https://api.fda.gov/drug/label.json"
+                    f"?search=(openfda.brand_name:{query}+openfda.generic_name:{query})"
+                    f"&limit=1"
+                )
+                req = urllib.request.Request(url, headers={"User-Agent": "MedMinder/1.0"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    fda_data = json.loads(resp.read().decode())
+
+                if fda_data.get("results"):
+                    result = fda_data["results"][0]
+                    dosage_info = ""
+                    if result.get("dosage_and_administration"):
+                        dosage_info = result["dosage_and_administration"][0][:800]
+
+                    brand = (result.get("openfda", {}).get("brand_name", [None])[0]
+                             if result.get("openfda") else None)
+                    generic = (result.get("openfda", {}).get("generic_name", [None])[0]
+                               if result.get("openfda") else None)
+
+                    warnings.append({
+                        "type": "fda_info",
+                        "severity": "info",
+                        "message": (
+                            f"📋 FDA Drug Label ({brand or generic or name}):\n"
+                            f"{dosage_info}"
+                        ),
+                        "source": "openFDA Drug Label API (api.fda.gov)",
+                    })
+                else:
+                    warnings.append({
+                        "type": "fda_not_found",
+                        "severity": "info",
+                        "message": f"No FDA drug label found for '{name}'. Verify the name and dosage.",
+                    })
+            except Exception as e:
+                logger.warning("FDA lookup failed for '%s': %s", name, str(e))
+                warnings.append({
+                    "type": "fda_error",
+                    "severity": "info",
+                    "message": f"Could not verify dosage with FDA database. Proceeding with your input.",
+                })
+
+        # ─── Return warnings if any found (and not yet confirmed) ────
+        if warnings and not confirmed:
+            logger.info(
+                "Tool add_medication: %d warning(s) for '%s' — requiring confirmation",
+                len(warnings), name,
+            )
+            return json.dumps({
+                "status": "requires_confirmation",
+                "message": (
+                    f"Before adding {name} ({dosage}, {frequency} at {times}), "
+                    f"please review the following and confirm with the user:"
+                ),
+                "warnings": warnings,
+                "action_needed": (
+                    "Show ALL warnings to the user. Ask if they want to proceed. "
+                    "If they confirm, call add_medication again with confirmed=true."
+                ),
+                "medication_preview": {
+                    "name": name, "dosage": dosage,
+                    "frequency": frequency, "times": times,
+                },
+            }, indent=2)
+
+        # ─── All clear (or confirmed): actually add the medication ───
         medication = await db.add_medication(
             user_id=user_id,
             name=name,
