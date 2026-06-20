@@ -131,6 +131,34 @@ def create_schedule_agent() -> LlmAgent:
     )
 
     # -------------------------------------------------------------------
+    # Connect to healthcare-mcp-public for FDA drug label lookups
+    # -------------------------------------------------------------------
+    # This gives the ScheduleAgent access to FDA drug labels so it can
+    # validate dosages against official FDA data (standard doses, max
+    # daily dose, etc.) rather than relying on LLM training knowledge.
+    # Graceful degradation: if healthcare-mcp isn't available, the agent
+    # falls back to LLM knowledge for dose validation.
+    tool_sources: list[McpToolset] = [medminder_mcp]
+    try:
+        healthcare_mcp = McpToolset(
+            connection_params=StdioConnectionParams(
+                server_params=StdioServerParameters(
+                    command="npx",
+                    args=["-y", "healthcare-mcp"],
+                    env={**os.environ},
+                )
+            )
+        )
+        tool_sources.append(healthcare_mcp)
+        logger.info("healthcare-mcp-public connected to ScheduleAgent for FDA drug label lookups.")
+    except Exception as e:
+        logger.warning(
+            "healthcare-mcp-public unavailable for ScheduleAgent: %s. "
+            "Dose validation will use LLM knowledge instead of FDA data.",
+            str(e),
+        )
+
+    # -------------------------------------------------------------------
     # Build the Schedule Agent
     # -------------------------------------------------------------------
     # The agent's instruction prompt is carefully crafted to:
@@ -188,14 +216,20 @@ STEP 1 — CHECK FOR DUPLICATES:
     ASK: "I see you already have [similar name]. Is this a different formulation,
     or did you mean to update the existing one?"
 
-STEP 2 — VALIDATE DOSAGE (use your medical knowledge):
-  Before adding, consider whether the dosage seems reasonable:
-  • Common medications have well-known standard dose ranges. If the user's
-    dose seems UNUSUALLY HIGH or UNUSUALLY LOW, warn them:
-    "⚠️ Note: The typical dose for [medication] is [standard range]. You're
-    adding [their dose], which seems [higher/lower] than usual. This might be
-    correct if your doctor prescribed it specifically for you. Would you like
-    to proceed?"
+STEP 2 — VALIDATE DOSAGE (use FDA drug label tools):
+  Before adding, look up the medication's standard dosing:
+  • Use the FDA drug label search tool (from healthcare-mcp) to find the
+    official prescribing information for the medication. Look for:
+    - Standard adult dose ranges
+    - Maximum recommended daily dose
+    - Typical frequency (once daily, twice daily, etc.)
+  • If the FDA tool is unavailable, fall back to your medical knowledge.
+  • If the user's dose seems UNUSUALLY HIGH or UNUSUALLY LOW compared to
+    the FDA label, warn them:
+    "⚠️ Note: According to the FDA drug label, the typical dose for
+    [medication] is [standard range]. You're adding [their dose], which
+    seems [higher/lower] than usual. This might be correct if your doctor
+    prescribed it specifically for you. Would you like to proceed?"
   • ALWAYS let the user proceed if they confirm — their doctor may have
     prescribed a non-standard dose for good reason.
   • If the FREQUENCY seems unusual (e.g., 10 times per day for a medication
@@ -263,10 +297,10 @@ not constitute medical advice. Never advise users to change medication
 dosages, skip doses, or alter their prescribed regimen. If a user asks
 about changing their medication, recommend they consult their doctor.""",
 
-        # Tools list — McpToolset provides all tools from the MCP server.
-        # ADK will discover the available tools via MCP's tools/list method
-        # when the agent is initialized.
-        tools=[medminder_mcp],
+        # Tools list — includes our custom MedMinder MCP server (medication
+        # CRUD) and optionally healthcare-mcp-public (FDA drug label lookups
+        # for dose validation). ADK discovers tools via MCP's tools/list.
+        tools=tool_sources,
     )
 
     logger.info("ScheduleAgent created successfully.")
