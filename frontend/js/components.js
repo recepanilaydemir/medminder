@@ -112,6 +112,11 @@ function renderTracePanel(trace, messageId) {
     const stepIcon = isRouting ? '🔀' : icon;
     const stepLabel = isRouting ? `Routed to ${author}` : label;
 
+    // MCP server source badge (only for tool calls and responses)
+    const mcpSource = event.mcp_server
+      ? `<div class="trace-mcp-source">📡 via ${escapeHTML(event.mcp_server)}</div>`
+      : '';
+
     return `
       <div class="trace-step trace-step--${stepType}">
         <div class="trace-step-header">
@@ -119,6 +124,7 @@ function renderTracePanel(trace, messageId) {
           <span class="trace-badge trace-badge--${stepType}">${stepType.replace('_', ' ')}</span>
           <span>${stepLabel}</span>
         </div>
+        ${mcpSource}
         ${detail ? `<div class="trace-step-detail">${detail}</div>` : ''}
       </div>
     `;

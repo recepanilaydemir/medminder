@@ -1456,3 +1456,12 @@ ul, ol { list-style: none; }
 .trace-badge--tool_call { background: rgba(20, 184, 166, 0.2); color: var(--accent-light); }
 .trace-badge--tool_response { background: rgba(34, 197, 94, 0.2); color: var(--success); }
 .trace-badge--text { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+
+.trace-mcp-source {
+  padding-left: 22px;
+  font-size: 0.68rem;
+  color: var(--accent);
+  opacity: 0.85;
+  font-style: italic;
+  margin-top: 1px;
+}

@@ -588,6 +588,37 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
         response_parts: list[str] = []
         trace_events: list[dict] = []  # Capture event trace for transparency
 
+        # Map tool names → source MCP server for trace attribution.
+        # This lets the UI show which MCP server provided each tool.
+        def _get_mcp_source(tool_name: str) -> str:
+            """Resolve which MCP server a tool belongs to."""
+            MEDMINDER_TOOLS = {
+                "add_medication", "remove_medication", "list_medications",
+                "log_dose", "log_missed_dose", "get_todays_schedule",
+                "log_symptom", "get_adherence_report", "get_symptom_history",
+                "generate_doctor_summary",
+            }
+            FDA_TOOLS = {"lookup_drug_info"}
+            BIOMCP_TOOLS = {"search_drug_interactions", "search_pubmed", "get_drug_details"}
+            DRUG_INT_TOOLS = {"check_interaction", "get_interactions"}
+            HEALTHCARE_TOOLS = {"search_fda_drugs", "get_icd10_codes", "search_pubmed_articles"}
+            ADK_TOOLS = {"transfer_to_agent"}
+
+            if tool_name in MEDMINDER_TOOLS:
+                return "MedMinder MCP Server"
+            elif tool_name in FDA_TOOLS:
+                return "MedMinder MCP → openFDA API"
+            elif tool_name in BIOMCP_TOOLS:
+                return "BioMCP (DDInter/PubMed)"
+            elif tool_name in DRUG_INT_TOOLS:
+                return "drug-interaction-mcp"
+            elif tool_name in HEALTHCARE_TOOLS:
+                return "healthcare-mcp-public"
+            elif tool_name in ADK_TOOLS:
+                return "ADK Agent Router"
+            else:
+                return "External MCP"
+
         async for event in runner.run_async(
             user_id=chat_request.user_id,
             session_id=session_id,
@@ -610,6 +641,7 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                             **trace_entry,
                             "type": "tool_call",
                             "tool_name": fc.name,
+                            "mcp_server": _get_mcp_source(fc.name),
                             "tool_args": {
                                 k: str(v)[:200]
                                 for k, v in (fc.args or {}).items()
@@ -624,6 +656,7 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                             **trace_entry,
                             "type": "tool_response",
                             "tool_name": fr.name,
+                            "mcp_server": _get_mcp_source(fr.name),
                             "result_preview": response_text,
                         })
                     # ── Text responses ──
