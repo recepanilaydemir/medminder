@@ -586,22 +586,56 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
         #   - Sub-agent delegations
         #   - Error events
         response_parts: list[str] = []
+        trace_events: list[dict] = []  # Capture event trace for transparency
 
         async for event in runner.run_async(
             user_id=chat_request.user_id,
             session_id=session_id,
             new_message=user_message,
         ):
-            # Each event has an `author` (which agent produced it) and
-            # `content` (the actual response). We collect text parts from
-            # all events to build the complete response.
+            # Build a base trace entry for every event — records which
+            # sub-agent authored it and when it occurred.
+            trace_entry = {
+                "author": getattr(event, 'author', 'unknown'),
+                "type": "text",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
             if event.content and event.content.parts:
                 for part in event.content.parts:
-                    # Only collect text parts — skip function_call and
-                    # function_response parts (those are internal to the
-                    # agent system and not meant for the user).
-                    if hasattr(part, "text") and part.text:
+                    # ── Function calls (tool invocations) ──
+                    if hasattr(part, 'function_call') and part.function_call:
+                        fc = part.function_call
+                        trace_events.append({
+                            **trace_entry,
+                            "type": "tool_call",
+                            "tool_name": fc.name,
+                            "tool_args": {
+                                k: str(v)[:200]
+                                for k, v in (fc.args or {}).items()
+                            },
+                        })
+                    # ── Function responses (tool results) ──
+                    elif hasattr(part, 'function_response') and part.function_response:
+                        fr = part.function_response
+                        # Truncate response for readability
+                        response_text = str(fr.response)[:500] if fr.response else ''
+                        trace_events.append({
+                            **trace_entry,
+                            "type": "tool_response",
+                            "tool_name": fr.name,
+                            "result_preview": response_text,
+                        })
+                    # ── Text responses ──
+                    elif hasattr(part, 'text') and part.text:
                         response_parts.append(part.text)
+                        trace_events.append({
+                            **trace_entry,
+                            "type": "text",
+                            "text_preview": (
+                                part.text[:200] + ('...' if len(part.text) > 200 else '')
+                            ),
+                        })
                         logger.debug(
                             "Response part from '%s': %s",
                             event.author,
@@ -634,6 +668,7 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                 "response": agent_response,
                 "session_id": session_id,
                 "user_id": chat_request.user_id,
+                "trace": trace_events,  # Agent reasoning trace for transparency
                 "disclaimer": (
                     "⚕️ This response is for informational purposes only "
                     "and does not constitute medical advice."
@@ -824,14 +859,25 @@ async def get_todays_schedule(
 # Just open the browser to http://localhost:8000 and everything works.
 
 # Mount static files for CSS, JS, and other assets.
-# The /frontend path prefix means requests like /frontend/css/style.css
-# will serve files from the frontend/css/ directory.
+# The HTML uses relative paths like "css/style.css" and "js/api.js".
+# When loaded from "/", these resolve to "/css/style.css" and "/js/api.js".
+# So we mount each subdirectory at its matching URL path.
 if _FRONTEND_DIR.exists():
-    app.mount(
-        "/frontend",
-        StaticFiles(directory=str(_FRONTEND_DIR)),
-        name="frontend_static",
-    )
+    _css_dir = _FRONTEND_DIR / "css"
+    _js_dir = _FRONTEND_DIR / "js"
+
+    if _css_dir.exists():
+        app.mount(
+            "/css",
+            StaticFiles(directory=str(_css_dir)),
+            name="css_static",
+        )
+    if _js_dir.exists():
+        app.mount(
+            "/js",
+            StaticFiles(directory=str(_js_dir)),
+            name="js_static",
+        )
     logger.info("Frontend static files mounted from: %s", _FRONTEND_DIR)
 else:
     logger.warning(

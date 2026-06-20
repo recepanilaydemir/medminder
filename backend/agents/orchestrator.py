@@ -157,7 +157,7 @@ def create_root_agent() -> LlmAgent:
         # The orchestrator also uses flash for fast routing decisions.
         # Routing doesn't require deep reasoning — it's mostly intent
         # classification based on the sub-agent descriptions.
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
 
         # Top-level description — used if this agent is itself a sub-agent
         # in a larger system (future-proofing for multi-app architectures).

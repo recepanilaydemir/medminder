@@ -213,8 +213,9 @@ function onViewActivated(viewName) {
  *
  * @param {string}  text   - Message content.
  * @param {boolean} isUser - True for user messages.
+ * @param {Array|null} trace - Optional agent trace events for transparency.
  */
-function addMessage(text, isUser) {
+function addMessage(text, isUser, trace = null) {
   state.messages.push({
     text,
     isUser,
@@ -222,7 +223,8 @@ function addMessage(text, isUser) {
   });
 
   const container = document.getElementById('chat-messages');
-  container.insertAdjacentHTML('beforeend', renderChatMessage(text, isUser));
+  const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+  container.insertAdjacentHTML('beforeend', renderChatMessage(text, isUser, trace, messageId));
   scrollChatToBottom();
 }
 
@@ -254,7 +256,7 @@ async function sendMessage() {
 
     // Display agent response
     const agentText = response.response || response.message || 'I received your message but had no response.';
-    addMessage(agentText, false);
+    addMessage(agentText, false, response.trace || null);
 
     // Update session ID if the server provides one
     if (response.session_id) {
@@ -546,6 +548,23 @@ function bindEvents() {
 // =============================================================================
 // Utility Functions
 // =============================================================================
+
+/**
+ * Toggle visibility of an agent trace panel.
+ * @param {string} messageId - The message ID to toggle.
+ */
+function toggleTrace(messageId) {
+  const panel = document.getElementById('trace-' + messageId);
+  const toggle = panel?.previousElementSibling;
+  if (panel) {
+    panel.classList.toggle('visible');
+    const isVisible = panel.classList.contains('visible');
+    if (toggle) {
+      toggle.classList.toggle('active', isVisible);
+      toggle.setAttribute('aria-expanded', isVisible);
+    }
+  }
+}
 
 /**
  * Generate a UUID v4-like session ID for chat continuity.

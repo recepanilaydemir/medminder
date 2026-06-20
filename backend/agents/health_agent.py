@@ -193,10 +193,10 @@ def create_health_agent() -> LlmAgent:
     health_agent = LlmAgent(
         name="HealthAgent",
 
-        # gemini-2.0-flash for fast responses. Report generation might
+        # gemini-2.5-flash for fast responses. Report generation might
         # benefit from a more capable model, but flash handles it well
         # since the heavy lifting is done by the MCP tools.
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
 
         # Description for the orchestrator's routing logic.
         # Keywords: symptoms, adherence, reports, doctor, health tracking

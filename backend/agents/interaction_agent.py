@@ -262,10 +262,10 @@ def create_interaction_agent() -> LlmAgent:
     interaction_agent = LlmAgent(
         name="InteractionAgent",
 
-        # Using gemini-2.0-flash — interaction checks need to be fast
+        # Using gemini-2.5-flash — interaction checks need to be fast
         # because they're often triggered as safety checks during other
         # operations (e.g., when adding a new medication).
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
 
         # Description for the orchestrator's routing logic.
         # Keywords here help the orchestrator recognize interaction-related

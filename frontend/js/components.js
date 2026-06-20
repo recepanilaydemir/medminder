@@ -30,7 +30,7 @@
  * @param {boolean} isUser - True for user messages, false for agent messages.
  * @returns {string} HTML string.
  */
-function renderChatMessage(text, isUser = false) {
+function renderChatMessage(text, isUser = false, trace = null, messageId = null) {
   // Basic HTML escaping to prevent XSS in user-supplied content
   const escaped = escapeHTML(text);
 
@@ -44,14 +44,104 @@ function renderChatMessage(text, isUser = false) {
       </div>`;
   }
 
+  // Build the optional trace panel HTML for agent messages
+  const traceHtml = (trace && trace.length > 0)
+    ? renderTracePanel(trace, messageId || ('msg-' + Date.now()))
+    : '';
+
   // Agent messages include a small bot avatar
   return `
     <div class="message-agent-wrapper">
       <div class="agent-avatar" aria-hidden="true">🤖</div>
       <div class="message message-agent">
         ${formatted}
+        ${traceHtml}
       </div>
     </div>`;
+}
+
+/**
+ * Render the agent trace/log panel for an agent message.
+ * Shows which sub-agent handled the request, what tools were called,
+ * and what MCP servers responded.
+ *
+ * @param {Array<Object>} trace - Array of trace events from the server.
+ * @param {string} messageId - Unique ID to link toggle with panel.
+ * @returns {string} HTML string.
+ */
+function renderTracePanel(trace, messageId) {
+  if (!trace || trace.length === 0) {
+    return '';
+  }
+
+  // Build the trace steps HTML
+  const stepsHtml = trace.map((event, i) => {
+    const type = event.type || 'text';
+    const author = escapeHTML(event.author || 'unknown');
+    let icon, label, detail;
+
+    switch (type) {
+      case 'tool_call':
+        icon = '🔧';
+        label = `Tool Call: ${escapeHTML(event.tool_name || 'unknown')}`;
+        detail = event.tool_args
+          ? Object.entries(event.tool_args)
+              .map(([k, v]) => `${escapeHTML(k)}: ${escapeHTML(String(v))}`)
+              .join(', ')
+          : '';
+        break;
+      case 'tool_response':
+        icon = '✅';
+        label = `Tool Result: ${escapeHTML(event.tool_name || 'unknown')}`;
+        detail = event.result_preview ? escapeHTML(event.result_preview).substring(0, 200) : 'OK';
+        break;
+      case 'text':
+        icon = '💬';
+        label = `Response from ${author}`;
+        detail = event.text_preview ? escapeHTML(event.text_preview) : '';
+        break;
+      default:
+        icon = '📎';
+        label = `Event: ${type}`;
+        detail = '';
+    }
+
+    // Determine if this is a routing event (author differs from previous)
+    const isRouting = i > 0 && event.author !== trace[i - 1].author && type === 'text';
+    const stepType = isRouting ? 'routing' : type;
+    const stepIcon = isRouting ? '🔀' : icon;
+    const stepLabel = isRouting ? `Routed to ${author}` : label;
+
+    return `
+      <div class="trace-step trace-step--${stepType}">
+        <div class="trace-step-header">
+          <span>${stepIcon}</span>
+          <span class="trace-badge trace-badge--${stepType}">${stepType.replace('_', ' ')}</span>
+          <span>${stepLabel}</span>
+        </div>
+        ${detail ? `<div class="trace-step-detail">${detail}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  // Count tool calls for the toggle summary
+  const toolCalls = trace.filter(e => e.type === 'tool_call').length;
+  const agents = [...new Set(trace.map(e => e.author).filter(a => a && a !== 'unknown'))];
+  const summary = [];
+  if (agents.length > 0) summary.push(`${agents.length} agent${agents.length > 1 ? 's' : ''}`);
+  if (toolCalls > 0) summary.push(`${toolCalls} tool${toolCalls > 1 ? 's' : ''}`);
+  const summaryText = summary.length > 0 ? summary.join(' · ') : 'No tools used';
+
+  return `
+    <button class="message-trace-toggle" onclick="toggleTrace('${messageId}')" aria-expanded="false" aria-controls="trace-${messageId}">
+      <span class="trace-icon">ℹ️</span>
+      <span>${summaryText} · ${trace.length} steps</span>
+    </button>
+    <div class="message-trace" id="trace-${messageId}">
+      <div style="margin-bottom:8px;color:var(--text-muted);font-weight:600;">🔍 Agent Reasoning Trace</div>
+      ${stepsHtml}
+    </div>
+  `;
 }
 
 // =============================================================================

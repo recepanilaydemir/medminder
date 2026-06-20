@@ -142,10 +142,10 @@ def create_schedule_agent() -> LlmAgent:
     schedule_agent = LlmAgent(
         name="ScheduleAgent",
 
-        # Using gemini-2.0-flash for fast responses — medication schedule
+        # Using gemini-2.5-flash for fast responses — medication schedule
         # queries should feel instant. Flash is sufficient since these
         # operations are mostly CRUD (no complex reasoning needed).
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
 
         # Description is used by the ORCHESTRATOR to decide when to route
         # to this agent. It should clearly state what this agent handles
