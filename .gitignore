@@ -1,0 +1,79 @@
+# =============================================================================
+# MedMinder .gitignore
+# Python + Node.js combined gitignore with project-specific entries
+# =============================================================================
+
+# ---- Environment & Secrets ----
+# NEVER commit API keys, OAuth tokens, or credentials
+.env
+.env.local
+.env.*.local
+gcp-oauth.keys.json
+.gcp-saved-tokens.json
+tokens.json
+credentials.json
+
+# ---- Databases ----
+# SQLite database files (contain user health data)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# Testing & Coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+.nox/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- Node.js ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---- OS Files ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

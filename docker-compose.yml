@@ -1,0 +1,80 @@
+# =============================================================================
+# MedMinder Docker Compose Configuration
+# =============================================================================
+#
+# One-command deployment for the MedMinder application.
+#
+# Usage:
+#   # Start the application (builds if needed):
+#   docker-compose up --build
+#
+#   # Start in detached mode (background):
+#   docker-compose up -d --build
+#
+#   # View logs:
+#   docker-compose logs -f medminder
+#
+#   # Stop:
+#   docker-compose down
+#
+#   # Stop and remove data volume:
+#   docker-compose down -v
+#
+# Environment Variables:
+#   GOOGLE_API_KEY — Set this in your shell or .env file before running.
+#                    Alternatively, provide it via the web UI settings panel.
+#
+# ⚕️ MEDICAL DISCLAIMER:
+#   MedMinder is for informational and educational purposes only.
+#   It is NOT a substitute for professional medical advice.
+# =============================================================================
+
+version: '3.8'
+
+services:
+  medminder:
+    # Build from the Dockerfile in the project root
+    build: .
+
+    # Map container port 8000 to host port 8000
+    # Access the app at http://localhost:8000
+    ports:
+      - '8000:8000'
+
+    # Environment configuration
+    # GOOGLE_API_KEY: Passed from host environment (or .env file).
+    #   The :- syntax means "use empty string if not set" — the user
+    #   can always configure the key later via the web UI.
+    # MEDMINDER_DB_PATH: Store the SQLite database in the persistent volume.
+    # HOST/PORT: Bind to all interfaces inside the container.
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - MEDMINDER_DB_PATH=/app/data/medminder.db
+      - HOST=0.0.0.0
+      - PORT=8000
+
+    # Persistent data volume for the SQLite database.
+    # This ensures medication data, dose logs, and symptom history survive
+    # container restarts, rebuilds, and upgrades.
+    volumes:
+      - medminder-data:/app/data
+
+    # Restart policy — automatically restart the container if it crashes,
+    # but not if it was explicitly stopped by the user.
+    restart: unless-stopped
+
+    # Health check — Docker Compose will show the container as "healthy"
+    # or "unhealthy" based on this check. Useful for orchestration and
+    # monitoring dashboards.
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# Named volumes persist data independently of the container lifecycle.
+# To inspect: docker volume inspect kagglecapstone_medminder-data
+# To backup:  docker run --rm -v kagglecapstone_medminder-data:/data -v $(pwd):/backup alpine tar czf /backup/medminder-backup.tar.gz /data
+volumes:
+  medminder-data:

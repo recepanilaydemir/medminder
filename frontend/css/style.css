@@ -1,0 +1,1339 @@
+/* =============================================================================
+   MedMinder — Design System & Global Styles
+   =============================================================================
+   A premium, medical-grade dark UI with teal accents.
+   Aesthetic: Apple Health meets a modern chatbot interface.
+   
+   ⚠️ MEDICAL DISCLAIMER: This UI is for informational purposes only.
+   It is not a substitute for professional medical advice.
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   Google Fonts — Inter (imported as fallback; primary link is in HTML <head>)
+   --------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ---------------------------------------------------------------------------
+   1. CSS Custom Properties (Design Tokens)
+   --------------------------------------------------------------------------- */
+:root {
+  /* — Palette: Dark Mode --------------------------------------------------- */
+  --bg:             #0f172a;   /* Deep navy background                        */
+  --surface:        #1e293b;   /* Card / elevated surface                     */
+  --surface-hover:  #334155;   /* Hovered surface                             */
+  --border:         #475569;   /* Default border colour                       */
+  --border-subtle:  rgba(255, 255, 255, 0.08); /* Ultra-subtle glass border   */
+
+  /* — Accent: Teal --------------------------------------------------------- */
+  --accent:         #14b8a6;
+  --accent-light:   #2dd4bf;
+  --accent-dark:    #0d9488;
+  --accent-glow:    rgba(20, 184, 166, 0.35);
+
+  /* — Semantic Colours ----------------------------------------------------- */
+  --warning:        #f59e0b;   /* Amber                                       */
+  --danger:         #ef4444;   /* Red                                         */
+  --success:        #22c55e;   /* Green                                       */
+  --info:           #3b82f6;   /* Blue (utility)                              */
+
+  /* — Text ----------------------------------------------------------------- */
+  --text:           #f8fafc;   /* Primary text — near-white                   */
+  --text-muted:     #94a3b8;   /* Secondary / labels                          */
+  --text-dim:       #64748b;   /* Disabled / placeholders                     */
+
+  /* — Typography ----------------------------------------------------------- */
+  --font-family:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                    Roboto, Oxygen, Ubuntu, sans-serif;
+
+  /* — Border Radius -------------------------------------------------------- */
+  --radius-sm:      6px;
+  --radius-md:      12px;
+  --radius-lg:      16px;
+  --radius-xl:      24px;
+  --radius-full:    9999px;
+
+  /* — Shadows (blue-tinted glows) ------------------------------------------ */
+  --shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.4),
+                    0 0 8px rgba(20, 184, 166, 0.04);
+  --shadow-md:      0 4px 12px rgba(0, 0, 0, 0.5),
+                    0 0 16px rgba(20, 184, 166, 0.06);
+  --shadow-lg:      0 8px 30px rgba(0, 0, 0, 0.6),
+                    0 0 30px rgba(20, 184, 166, 0.08);
+  --shadow-glow:    0 0 20px rgba(20, 184, 166, 0.25);
+
+  /* — Transitions ---------------------------------------------------------- */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow:   400ms ease;
+
+  /* — Layout --------------------------------------------------------------- */
+  --sidebar-width:  280px;
+  --header-height:  64px;
+}
+
+/* ---------------------------------------------------------------------------
+   2. CSS Reset
+   --------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;               /* Prevent double scrollbars; views scroll */
+  min-height: 100vh;
+}
+
+/* Selection highlight uses accent colour */
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: var(--accent-light);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+a:hover { color: var(--accent); }
+
+button { cursor: pointer; font-family: inherit; }
+
+ul, ol { list-style: none; }
+
+/* ---------------------------------------------------------------------------
+   3. Layout — App Shell
+   --------------------------------------------------------------------------- */
+
+/* Full-viewport flex wrapper */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Main app uses row layout (sidebar + content) */
+.main-app {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  overflow-y: auto;
+  transition: transform var(--transition-normal);
+  z-index: 100;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+
+.sidebar-logo .logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: var(--shadow-glow);
+}
+
+.sidebar-logo h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ---- Main Content ---- */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ---- Header ---- */
+.header {
+  height: var(--header-height);
+  min-height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---- Views ---- */
+.view {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  animation: fadeIn 300ms ease;
+}
+.view.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------------------------------------------------------------------
+   4. Components
+   --------------------------------------------------------------------------- */
+
+/* ========== 4.1 Buttons ================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+  outline: none;
+}
+
+.btn:active { transform: scale(0.98); }
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Primary — teal gradient */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-glow);
+  filter: brightness(1.1);
+}
+
+/* Secondary — outlined */
+.btn-secondary {
+  background: transparent;
+  color: var(--accent-light);
+  border: 1px solid var(--accent);
+}
+.btn-secondary:hover {
+  background: rgba(20, 184, 166, 0.1);
+  transform: scale(1.02);
+}
+
+/* Danger */
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover {
+  filter: brightness(1.15);
+  transform: scale(1.02);
+}
+
+/* Ghost — minimal */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+.btn-ghost:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* Icon-only button variant */
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--radius-md);
+}
+
+/* ========== 4.2 Cards ==================================================== */
+.card {
+  background: rgba(30, 41, 59, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all var(--transition-normal);
+}
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Specialised card variants — coloured left border accent */
+.card-medication { border-left: 3px solid var(--accent); }
+.card-symptom    { border-left: 3px solid var(--warning); }
+.card-alert      { border-left: 3px solid var(--danger); }
+
+/* ========== 4.3 Chat Interface =========================================== */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+/* Individual messages */
+.message {
+  max-width: 72%;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  animation: slideUp 300ms ease;
+  word-wrap: break-word;
+}
+
+/* User message — right-aligned, teal */
+.message-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+/* Agent message — left-aligned, surface */
+.message-agent {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-bottom-left-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+/* Agent avatar (small bot icon) */
+.message-agent-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  animation: slideUp 300ms ease;
+}
+
+.agent-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Typing indicator — three pulsing dots */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 18px;
+}
+
+.typing-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+.typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Input area — pinned to bottom of chat */
+.chat-input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.chat-input-area textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  padding: 12px 16px;
+  font-family: var(--font-family);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  min-height: 48px;
+  max-height: 140px;
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.chat-input-area textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.chat-input-area textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Send button in chat */
+.chat-input-area .btn-primary {
+  height: 48px;
+  padding: 0 20px;
+}
+
+/* ========== 4.4 Forms & Inputs =========================================== */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.input-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.text-input,
+.select-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+}
+
+.text-input:focus,
+.select-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.text-input::placeholder {
+  color: var(--text-dim);
+}
+
+.select-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+/* ========== 4.5 Severity Badges ========================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge-safe     { background: rgba(34, 197, 94, 0.15);  color: #4ade80; }
+.badge-minor    { background: rgba(134, 239, 172, 0.15); color: #86efac; }
+.badge-moderate { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.badge-major    { background: rgba(239, 68, 68, 0.2);   color: #f87171; }
+.badge-critical {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  animation: pulse 2s infinite;
+}
+
+.badge-active   { background: rgba(20, 184, 166, 0.15); color: var(--accent-light); }
+.badge-inactive { background: rgba(100, 116, 139, 0.15); color: var(--text-dim); }
+
+/* ========== 4.6 Medication Schedule Timeline ============================= */
+.timeline {
+  position: relative;
+  padding-left: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Vertical line running down the left side */
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/* Dot on the timeline */
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -33px;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--surface-hover);
+  border: 2px solid var(--border);
+  z-index: 1;
+}
+
+.timeline-time {
+  min-width: 60px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-top: 4px;
+}
+
+.timeline-card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  transition: all var(--transition-fast);
+}
+.timeline-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Status variants */
+.timeline-item.taken::before {
+  background: var(--success);
+  border-color: var(--success);
+}
+.timeline-item.taken .timeline-card {
+  opacity: 0.65;
+}
+.timeline-item.taken .timeline-status-icon { color: var(--success); }
+
+.timeline-item.upcoming::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.timeline-item.upcoming .timeline-status-icon { color: var(--accent); }
+
+.timeline-item.missed::before {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.timeline-item.missed .timeline-card {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.timeline-item.missed .timeline-status-icon { color: var(--danger); }
+
+.timeline-status-icon {
+  font-size: 1.1rem;
+}
+
+/* ========== 4.7 Stats / Adherence Cards ================================== */
+.stat-card {
+  background: rgba(30, 41, 59, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-align: center;
+  transition: all var(--transition-normal);
+}
+.stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Circular progress indicator (conic-gradient technique) */
+.circular-progress {
+  --progress: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--accent) calc(var(--progress) * 1%),
+    var(--surface-hover) 0
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  position: relative;
+}
+
+/* Inner circle to create the "ring" effect */
+.circular-progress::after {
+  content: '';
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.circular-progress .progress-text {
+  position: relative;
+  z-index: 1;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Stat grid layout */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 24px;
+}
+
+/* ========== 4.8 Navigation =============================================== */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-left: 3px solid transparent;
+  user-select: none;
+}
+
+.nav-item:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: rgba(20, 184, 166, 0.08);
+  color: var(--accent-light);
+  border-left-color: var(--accent);
+}
+
+.nav-item .nav-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+/* ========== 4.9 Modal / Dialog =========================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 200ms ease;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: scaleIn 250ms ease;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.modal-body {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ========== 4.10 Medical Disclaimer Banner =============================== */
+.disclaimer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(245, 158, 11, 0.12);
+  border-top: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+  padding: 10px 24px;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 200;
+  animation: slideUp 400ms ease;
+}
+
+.disclaimer-close {
+  background: none;
+  border: none;
+  color: var(--warning);
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.disclaimer-close:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* ========== 4.11 Loading States ========================================== */
+
+/* Skeleton shimmer placeholder */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-hover) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.skeleton-text:last-child { width: 60%; }
+
+.skeleton-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.skeleton-card {
+  height: 120px;
+  width: 100%;
+}
+
+/* Spinner */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--surface-hover);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-lg {
+  width: 48px;
+  height: 48px;
+  border-width: 4px;
+}
+
+/* Centered loading helper */
+.loading-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px;
+  color: var(--text-muted);
+}
+
+/* ========== 4.12 Toast Notifications ===================================== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: slideInRight 300ms ease;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+.toast-success {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+.toast-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+.toast-warning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+.toast-info {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+/* Dismiss animation */
+.toast.toast-dismiss {
+  animation: slideOutRight 300ms ease forwards;
+}
+
+/* ========== 4.13 Empty State ============================================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 0.9375rem;
+  max-width: 320px;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Setup Screen
+   --------------------------------------------------------------------------- */
+.setup-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(20, 184, 166, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+    var(--bg);
+}
+
+.setup-card {
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 48px 40px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  animation: fadeIn 600ms ease;
+}
+
+.setup-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: var(--shadow-glow);
+}
+
+.setup-card h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.setup-card .subtitle {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  margin-bottom: 32px;
+}
+
+.setup-card .input-group {
+  text-align: left;
+}
+
+.setup-disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 20px;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------------
+   6. Dashboard View
+   --------------------------------------------------------------------------- */
+.dashboard-section {
+  padding: 24px;
+}
+
+.dashboard-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------------
+   7. Medication List View
+   --------------------------------------------------------------------------- */
+.medications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  padding: 24px;
+}
+
+.medication-name {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.medication-detail {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.medication-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.medication-time-chip {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--accent-light);
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------------
+   8. History View
+   --------------------------------------------------------------------------- */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+}
+
+.symptom-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.symptom-date {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  min-width: 80px;
+}
+
+.symptom-description {
+  flex: 1;
+  font-size: 0.9375rem;
+}
+
+/* ---------------------------------------------------------------------------
+   9. Keyframe Animations
+   --------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   10. Scrollbar Styling
+   --------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------------------
+   11. Responsive Breakpoints
+   --------------------------------------------------------------------------- */
+
+/* Tablet — narrower sidebar */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 220px;
+  }
+}
+
+/* Mobile — sidebar becomes bottom nav, single-column layout */
+@media (max-width: 768px) {
+  .main-app {
+    flex-direction: column-reverse;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    height: auto;
+    border-right: none;
+    border-top: 1px solid var(--border-subtle);
+    flex-direction: row;
+    padding: 8px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 4px;
+  }
+
+  .sidebar-logo { display: none; }
+  .sidebar-bottom { display: none; }
+
+  .sidebar-nav {
+    flex-direction: row;
+    gap: 2px;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .nav-item {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    font-size: 0.6875rem;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+  }
+  .nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--accent);
+  }
+
+  .header {
+    padding: 0 16px;
+  }
+
+  .chat-input-area {
+    padding: 12px 16px;
+  }
+
+  .message {
+    max-width: 88%;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 16px;
+  }
+
+  .medications-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .setup-card {
+    padding: 32px 24px;
+  }
+
+  .modal {
+    width: 95%;
+    padding: 24px;
+  }
+
+  /* Push content above the bottom disclaimer on mobile */
+  .disclaimer {
+    font-size: 0.75rem;
+    padding: 8px 16px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   12. Utility Classes
+   --------------------------------------------------------------------------- */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: 8px; }
+.gap-md { gap: 16px; }
+.gap-lg { gap: 24px; }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-accent { color: var(--accent-light); }
+.text-sm { font-size: 0.8125rem; }
+.text-lg { font-size: 1.125rem; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.w-full { width: 100%; }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 16px; }
+.mt-lg { margin-top: 24px; }
+.mb-md { margin-bottom: 16px; }
+.p-md { padding: 16px; }
+.hidden { display: none !important; }

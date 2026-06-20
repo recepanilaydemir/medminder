@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    MedMinder — AI Medication Assistant
+    ⚠️ MEDICAL DISCLAIMER: This application is for informational purposes only.
+    It is not a substitute for professional medical advice, diagnosis, or treatment.
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MedMinder — AI-powered medication management assistant. Track medications, log symptoms, and receive intelligent health guidance.">
+  <meta name="theme-color" content="#0f172a">
+  <title>MedMinder — AI Medication Assistant</title>
+
+  <!-- Favicon: inline SVG pill icon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💊</text></svg>">
+
+  <!-- Google Fonts: Inter (400, 500, 600, 700) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <div class="app-container">
+
+    <!-- =================================================================
+         Setup Screen — shown first if no API key is stored
+         ================================================================= -->
+    <div id="setup-screen" class="setup-screen">
+      <div class="setup-card">
+        <!-- Premium icon & branding -->
+        <div class="setup-icon" aria-hidden="true">💊</div>
+        <h1>MedMinder</h1>
+        <p class="subtitle">AI-Powered Medication Assistant</p>
+
+        <!-- API key configuration form -->
+        <form id="setup-form" autocomplete="off">
+          <div class="input-group">
+            <label class="input-label" for="setup-api-key">Google Gemini API Key</label>
+            <input
+              type="password"
+              id="setup-api-key"
+              class="text-input"
+              placeholder="Enter your API key…"
+              required
+              aria-describedby="setup-help"
+            >
+            <small id="setup-help" class="text-dim text-sm" style="margin-top:4px;">
+              Your key is stored locally and never shared.
+            </small>
+          </div>
+
+          <button type="submit" id="setup-connect-btn" class="btn btn-primary w-full" style="margin-top:8px;">
+            🔗 Connect &amp; Start
+          </button>
+        </form>
+
+        <!-- Inline medical disclaimer -->
+        <p class="setup-disclaimer">
+          ⚠️ <strong>Medical Disclaimer:</strong> MedMinder is for informational purposes only.
+          It is not a substitute for professional medical advice, diagnosis, or treatment.
+          Always consult your physician or pharmacist.
+        </p>
+      </div>
+    </div>
+
+    <!-- =================================================================
+         Main App — hidden until API key is configured
+         ================================================================= -->
+    <div id="main-app" class="main-app" style="display:none">
+
+      <!-- ----- Sidebar Navigation ----- -->
+      <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <!-- Logo / Brand -->
+        <div class="sidebar-logo">
+          <div class="logo-icon" aria-hidden="true">💊</div>
+          <h1>MedMinder</h1>
+        </div>
+
+        <!-- Primary nav links -->
+        <nav class="sidebar-nav">
+          <a class="nav-item active" data-view="chat" id="nav-chat" role="button" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">💬</span>
+            <span>Chat</span>
+          </a>
+          <a class="nav-item" data-view="dashboard" id="nav-dashboard" role="button">
+            <span class="nav-icon" aria-hidden="true">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a class="nav-item" data-view="medications" id="nav-medications" role="button">
+            <span class="nav-icon" aria-hidden="true">💊</span>
+            <span>Medications</span>
+          </a>
+          <a class="nav-item" data-view="history" id="nav-history" role="button">
+            <span class="nav-icon" aria-hidden="true">📋</span>
+            <span>History</span>
+          </a>
+        </nav>
+
+        <!-- Bottom settings link -->
+        <div class="sidebar-bottom">
+          <a class="nav-item" id="nav-settings" role="button">
+            <span class="nav-icon" aria-hidden="true">⚙️</span>
+            <span>Settings</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- ----- Content Area ----- -->
+      <main class="main-content">
+
+        <!-- ============================================================
+             Chat View
+             ============================================================ -->
+        <section id="view-chat" class="view active" aria-label="Chat">
+          <header class="header">
+            <h2 class="header-title">Chat with MedMinder</h2>
+            <div class="header-actions">
+              <button id="btn-new-chat" class="btn btn-ghost btn-icon" title="New conversation" aria-label="New conversation">
+                ✨
+              </button>
+            </div>
+          </header>
+
+          <div class="chat-container">
+            <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
+              <!-- Messages are rendered dynamically by JS -->
+            </div>
+
+            <div class="chat-input-area">
+              <textarea
+                id="chat-input"
+                placeholder="Ask MedMinder anything…"
+                rows="1"
+                aria-label="Message input"
+              ></textarea>
+              <button id="send-btn" class="btn btn-primary" aria-label="Send message">
+                <span aria-hidden="true">➤</span> Send
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             Dashboard View
+             ============================================================ -->
+        <section id="view-dashboard" class="view" aria-label="Dashboard">
+          <header class="header">
+            <h2 class="header-title">Dashboard</h2>
+            <div class="header-actions">
+              <button id="btn-refresh-dashboard" class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh dashboard">
+                🔄
+              </button>
+            </div>
+          </header>
+
+          <!-- Adherence Stats -->
+          <div class="dashboard-section">
+            <h3 class="dashboard-section-title">📈 Adherence Overview</h3>
+            <div class="stats-grid" id="adherence-stats">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Today's Schedule -->
+          <div class="dashboard-section">
+            <h3 class="dashboard-section-title">🕐 Today's Schedule</h3>
+            <div class="timeline" id="today-timeline">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="dashboard-section">
+            <h3 class="dashboard-section-title">⚡ Quick Actions</h3>
+            <div class="quick-actions">
+              <button id="btn-log-dose" class="btn btn-primary">✅ Log a Dose</button>
+              <button id="btn-log-symptom" class="btn btn-secondary">📝 Log Symptom</button>
+              <button id="btn-check-interaction" class="btn btn-secondary">🔍 Check Interaction</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             Medications View
+             ============================================================ -->
+        <section id="view-medications" class="view" aria-label="Medications">
+          <header class="header">
+            <h2 class="header-title">My Medications</h2>
+            <div class="header-actions">
+              <button id="btn-add-medication" class="btn btn-primary">+ Add Medication</button>
+            </div>
+          </header>
+
+          <div class="medications-grid" id="medications-list">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- ============================================================
+             History View
+             ============================================================ -->
+        <section id="view-history" class="view" aria-label="History">
+          <header class="header">
+            <h2 class="header-title">History</h2>
+            <div class="header-actions">
+              <button id="btn-export-history" class="btn btn-ghost">📥 Export</button>
+            </div>
+          </header>
+
+          <!-- Sub-tabs for Symptoms vs Dose History -->
+          <div class="flex gap-sm" style="padding:16px 24px 0;">
+            <button id="tab-symptoms" class="btn btn-primary btn-sm" data-history-tab="symptoms">Symptoms</button>
+            <button id="tab-doses" class="btn btn-ghost btn-sm" data-history-tab="doses">Dose History</button>
+          </div>
+
+          <div class="history-list" id="history-list">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =================================================================
+       Medical Disclaimer Banner (fixed bottom)
+       ================================================================= -->
+  <div class="disclaimer" id="disclaimer" role="alert">
+    ⚠️ MedMinder is for informational purposes only. It is not a substitute for professional
+    medical advice, diagnosis, or treatment. Always consult your physician or pharmacist.
+    <button
+      class="disclaimer-close"
+      id="disclaimer-close-btn"
+      aria-label="Dismiss disclaimer"
+      onclick="this.parentElement.style.display='none'"
+    >✕</button>
+  </div>
+
+  <!-- Toast notification container -->
+  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
+
+  <!-- =================================================================
+       Scripts — loaded in dependency order
+       ================================================================= -->
+  <script src="js/api.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
