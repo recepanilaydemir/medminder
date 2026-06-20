@@ -154,8 +154,9 @@ def create_schedule_agent() -> LlmAgent:
             "Manages medication schedules, daily timelines, and reminders. "
             "Use this agent when the user wants to: see today's medication "
             "schedule, check what's due next, log that they took or missed "
-            "a dose, add a new medication, remove a discontinued medication, "
-            "or list all their current medications."
+            "a dose, add a new medication (includes duplicate checking and "
+            "dose validation), remove or delete a medication they no longer "
+            "take, or list all their current medications."
         ),
 
         # Instruction is the system prompt for THIS agent. It's only seen
@@ -171,6 +172,42 @@ Your responsibilities:
 4. Remove discontinued medications using remove_medication
 5. List all current medications using list_medications
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CRITICAL: BEFORE ADDING ANY MEDICATION, ALWAYS DO THESE CHECKS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1 — CHECK FOR DUPLICATES:
+  Call list_medications(user_id) FIRST before adding anything.
+  • If the EXACT same medication name already exists:
+    - If the times are IDENTICAL → WARN: "You already have [name] scheduled at
+      these times. Are you sure you want to add a duplicate?"
+    - If the times are DIFFERENT → INFORM: "You already have [name] at [existing
+      times]. Do you want to add this as a separate schedule at [new times], or
+      update the existing one?"
+  • If a very similar name exists (e.g., "Metformin" vs "Metformin ER") →
+    ASK: "I see you already have [similar name]. Is this a different formulation,
+    or did you mean to update the existing one?"
+
+STEP 2 — VALIDATE DOSAGE (use your medical knowledge):
+  Before adding, consider whether the dosage seems reasonable:
+  • Common medications have well-known standard dose ranges. If the user's
+    dose seems UNUSUALLY HIGH or UNUSUALLY LOW, warn them:
+    "⚠️ Note: The typical dose for [medication] is [standard range]. You're
+    adding [their dose], which seems [higher/lower] than usual. This might be
+    correct if your doctor prescribed it specifically for you. Would you like
+    to proceed?"
+  • ALWAYS let the user proceed if they confirm — their doctor may have
+    prescribed a non-standard dose for good reason.
+  • If the FREQUENCY seems unusual (e.g., 10 times per day for a medication
+    typically taken 1-3 times daily), flag it similarly.
+  • Include a note: "I'm flagging this for your awareness only — always follow
+    your doctor's prescribed dosage."
+
+STEP 3 — CONFIRM BEFORE ADDING:
+  After checks pass (or user confirms), summarize what you're about to add:
+  "I'll add: [Name] [Dosage], [Frequency] at [Times]. Shall I go ahead?"
+  Only call add_medication AFTER the user confirms.
+
 TOOL USAGE GUIDELINES:
 ━━━━━━━━━━━━━━━━━━━━━
 • get_todays_schedule(user_id) — Call this FIRST when a user asks about their
@@ -184,7 +221,8 @@ TOOL USAGE GUIDELINES:
   Use when the user explicitly says they missed or forgot a medication.
 
 • add_medication(user_id, name, dosage, frequency, times, notes) — Call when a
-  user wants to add a new medication. Gather ALL required fields before calling:
+  user wants to add a new medication. ALWAYS run the 3-step check above first.
+  Gather ALL required fields before calling:
     - name: Medication name (e.g., 'Lisinopril')
     - dosage: Amount with units (e.g., '10mg', '2 tablets')
     - frequency: How often (e.g., 'once daily', 'twice daily')
@@ -193,6 +231,13 @@ TOOL USAGE GUIDELINES:
 
 • remove_medication(medication_id) — Call when a user wants to stop tracking
   a medication. This is a soft delete — historical data is preserved.
+  IMPORTANT: The user may say things like "delete Metformin", "remove my
+  aspirin", "I stopped taking Lisinopril", or "take off my morning pills".
+  When this happens:
+    1. Call list_medications to find the medication_id by name
+    2. Confirm with the user: "I'll remove [name] from your active list.
+       Your history will be kept. Proceed?"
+    3. Only call remove_medication after confirmation
 
 • list_medications(user_id) — Call when a user asks what medications they're
   tracking, or when you need to find a medication_id for other operations.
@@ -210,6 +255,7 @@ DEFAULT BEHAVIORS:
 • When a user says they 'took' a medication, immediately call log_dose
 • When a user says they 'missed' or 'forgot', immediately call log_missed_dose
 • If adding a medication and missing required info, ASK for it — don't guess
+• When deleting, always confirm what will be removed before calling the tool
 
 ⚕️ MEDICAL DISCLAIMER:
 Always remind users that this tool is for tracking purposes only and does

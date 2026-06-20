@@ -311,22 +311,41 @@ async function loadDashboard() {
   timelineContainer.innerHTML = renderSkeletonCards(2);
 
   try {
-    // Fetch schedule and render
-    const schedule = await window.api.getTodaySchedule();
+    // Fetch schedule — API returns {schedule: [...], count, date}
+    const response = await window.api.getTodaySchedule();
+    const scheduleData = response.schedule || response || [];
 
-    if (schedule && schedule.length > 0) {
-      timelineContainer.innerHTML = schedule
+    if (scheduleData.length > 0) {
+      // Map API format to what renderScheduleItem expects.
+      // API returns: {medication_name, dosage, scheduled_times, doses_logged_today, all_taken}
+      // Component expects: {time, medication, dosage, status}
+      const timelineItems = [];
+      scheduleData.forEach(med => {
+        (med.scheduled_times || []).forEach(t => {
+          timelineItems.push({
+            time: t,
+            medication: med.medication_name || med.name || 'Unknown',
+            dosage: med.dosage || '',
+            status: med.all_taken ? 'taken' : (med.doses_logged_today > 0 ? 'upcoming' : 'upcoming'),
+          });
+        });
+      });
+
+      // Sort by time
+      timelineItems.sort((a, b) => a.time.localeCompare(b.time));
+
+      timelineContainer.innerHTML = timelineItems
         .map(item => renderScheduleItem(item))
         .join('');
 
       // Calculate adherence from schedule data
-      const taken = schedule.filter(s => s.status === 'taken').length;
-      const total = schedule.length;
-      const pct = total > 0 ? Math.round((taken / total) * 100) : 0;
+      const totalDoses = scheduleData.reduce((s, m) => s + (m.total_doses_today || 0), 0);
+      const loggedDoses = scheduleData.reduce((s, m) => s + (m.doses_logged_today || 0), 0);
+      const pct = totalDoses > 0 ? Math.round((loggedDoses / totalDoses) * 100) : 0;
 
       statsContainer.innerHTML =
-        renderAdherenceStat('Today', `${taken}/${total}`, pct) +
-        renderAdherenceStat('This Week', '—', 0) +
+        renderAdherenceStat('Today', `${loggedDoses}/${totalDoses}`, pct) +
+        renderAdherenceStat('Medications', `${scheduleData.length}`, 100) +
         renderAdherenceStat('This Month', '—', 0);
     } else {
       timelineContainer.innerHTML = renderEmptyState('📅', 'No doses scheduled for today. Add medications to get started.');
@@ -352,8 +371,9 @@ async function loadMedications() {
   container.innerHTML = renderSkeletonCards(3);
 
   try {
-    const medications = await window.api.getMedications();
-    state.medications = medications || [];
+    // API returns {medications: [...], count, user_id}
+    const response = await window.api.getMedications();
+    state.medications = response.medications || response || [];
 
     if (state.medications.length > 0) {
       container.innerHTML = state.medications
@@ -384,9 +404,18 @@ async function loadHistory() {
   container.innerHTML = renderSkeletonCards(3);
 
   try {
-    const history = await window.api.getHistory(state.historyTab);
+    // The /api/history endpoint may not exist yet —
+    // fall back to showing a friendly empty state.
+    let history = [];
+    try {
+      const response = await window.api.getHistory(state.historyTab);
+      history = response.history || response.symptoms || response.doses || response || [];
+    } catch {
+      // Endpoint doesn't exist yet — show empty state instead of error
+      history = [];
+    }
 
-    if (history && history.length > 0) {
+    if (Array.isArray(history) && history.length > 0) {
       if (state.historyTab === 'symptoms') {
         container.innerHTML = history
           .map(s => renderSymptomEntry(s))
