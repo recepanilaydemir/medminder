@@ -796,6 +796,119 @@ async def get_todays_schedule(user_id: str) -> str:
             indent=2,
         )
 
+@mcp.tool()
+async def lookup_drug_info(drug_name: str) -> str:
+    """Look up official FDA drug label information for a medication.
+
+    Queries the openFDA drug labeling API to retrieve official prescribing
+    information including standard dosage ranges, administration guidelines,
+    warnings, and contraindications.
+
+    Use this tool BEFORE adding a medication to validate the dosage the user
+    provided against the FDA-approved label. This helps catch unusual doses
+    that might indicate a typo or misunderstanding.
+
+    Args:
+        drug_name: The medication name to look up (e.g., 'metformin',
+                   'aspirin', 'lisinopril'). Brand or generic names work.
+
+    Returns:
+        JSON string with FDA drug label data including:
+        - dosage_and_administration: Standard dosing information
+        - dosage_forms_and_strengths: Available dosage forms
+        - warnings: Important safety warnings
+        - indications_and_usage: What the drug is used for
+        - brand_name / generic_name: Official names
+
+    Example usage by the LLM:
+        >>> lookup_drug_info("metformin")
+        # Returns FDA label info showing typical dose is 500-2550mg/day
+        # Agent can then compare with user's requested dose
+    """
+    import urllib.request
+    import urllib.parse
+    import urllib.error
+
+    logger.info("Tool lookup_drug_info: Looking up '%s' on openFDA", drug_name)
+
+    try:
+        # Query openFDA drug label API — free, no API key required
+        # Search both brand_name and generic_name for best coverage
+        query = urllib.parse.quote(drug_name)
+        url = (
+            f"https://api.fda.gov/drug/label.json"
+            f"?search=(openfda.brand_name:{query}+openfda.generic_name:{query})"
+            f"&limit=1"
+        )
+
+        req = urllib.request.Request(url, headers={"User-Agent": "MedMinder/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        if not data.get("results"):
+            logger.info("Tool lookup_drug_info: No FDA data found for '%s'", drug_name)
+            return json.dumps({
+                "status": "not_found",
+                "drug_name": drug_name,
+                "message": (
+                    f"No FDA drug label found for '{drug_name}'. "
+                    "This may be a non-US drug or an uncommon name. "
+                    "Use your medical knowledge to validate the dose."
+                ),
+            }, indent=2)
+
+        result = data["results"][0]
+
+        # Extract key fields, truncating very long text for LLM readability
+        def _extract(field_name: str, max_len: int = 1500) -> str | None:
+            val = result.get(field_name)
+            if isinstance(val, list) and val:
+                text = val[0]
+                return text[:max_len] + "..." if len(text) > max_len else text
+            return None
+
+        drug_info = {
+            "status": "found",
+            "drug_name": drug_name,
+            "brand_name": result.get("openfda", {}).get("brand_name", [None])[0] if result.get("openfda") else None,
+            "generic_name": result.get("openfda", {}).get("generic_name", [None])[0] if result.get("openfda") else None,
+            "dosage_and_administration": _extract("dosage_and_administration"),
+            "dosage_forms_and_strengths": _extract("dosage_forms_and_strengths", 500),
+            "indications_and_usage": _extract("indications_and_usage", 500),
+            "warnings": _extract("warnings", 800),
+            "source": "openFDA Drug Label API (api.fda.gov)",
+            "disclaimer": (
+                "This information is from the official FDA drug label. "
+                "Always defer to the patient's prescribing physician for "
+                "actual dosage decisions."
+            ),
+        }
+
+        logger.info(
+            "Tool lookup_drug_info: Found FDA data for '%s' (brand: %s)",
+            drug_name, drug_info.get("brand_name"),
+        )
+        return json.dumps(drug_info, indent=2)
+
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return json.dumps({
+                "status": "not_found",
+                "drug_name": drug_name,
+                "message": f"No FDA drug label found for '{drug_name}'.",
+            }, indent=2)
+        logger.error("Tool lookup_drug_info HTTP error: %s", str(e))
+        return json.dumps({
+            "status": "error",
+            "message": f"FDA API error: {str(e)}. Use your medical knowledge.",
+        }, indent=2)
+    except Exception as e:
+        logger.error("Tool lookup_drug_info failed: %s", str(e))
+        return json.dumps({
+            "status": "error",
+            "message": f"Could not reach FDA API: {str(e)}. Use your medical knowledge.",
+        }, indent=2)
+
 
 # ===========================================================================
 #  Server Entry Point
@@ -813,5 +926,5 @@ if __name__ == "__main__":
     logger.info("Starting MedMinder MCP Server...")
     logger.info("Database path: %s", DB_PATH)
     logger.info("Transport: stdio")
-    logger.info("Tools registered: 10")
+    logger.info("Tools registered: 11")
     mcp.run()

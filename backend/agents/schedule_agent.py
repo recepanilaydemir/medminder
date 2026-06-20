@@ -131,34 +131,6 @@ def create_schedule_agent() -> LlmAgent:
     )
 
     # -------------------------------------------------------------------
-    # Connect to healthcare-mcp-public for FDA drug label lookups
-    # -------------------------------------------------------------------
-    # This gives the ScheduleAgent access to FDA drug labels so it can
-    # validate dosages against official FDA data (standard doses, max
-    # daily dose, etc.) rather than relying on LLM training knowledge.
-    # Graceful degradation: if healthcare-mcp isn't available, the agent
-    # falls back to LLM knowledge for dose validation.
-    tool_sources: list[McpToolset] = [medminder_mcp]
-    try:
-        healthcare_mcp = McpToolset(
-            connection_params=StdioConnectionParams(
-                server_params=StdioServerParameters(
-                    command="npx",
-                    args=["-y", "healthcare-mcp"],
-                    env={**os.environ},
-                )
-            )
-        )
-        tool_sources.append(healthcare_mcp)
-        logger.info("healthcare-mcp-public connected to ScheduleAgent for FDA drug label lookups.")
-    except Exception as e:
-        logger.warning(
-            "healthcare-mcp-public unavailable for ScheduleAgent: %s. "
-            "Dose validation will use LLM knowledge instead of FDA data.",
-            str(e),
-        )
-
-    # -------------------------------------------------------------------
     # Build the Schedule Agent
     # -------------------------------------------------------------------
     # The agent's instruction prompt is carefully crafted to:
@@ -216,25 +188,27 @@ STEP 1 — CHECK FOR DUPLICATES:
     ASK: "I see you already have [similar name]. Is this a different formulation,
     or did you mean to update the existing one?"
 
-STEP 2 — VALIDATE DOSAGE (use FDA drug label tools):
-  Before adding, look up the medication's standard dosing:
-  • Use the FDA drug label search tool (from healthcare-mcp) to find the
-    official prescribing information for the medication. Look for:
-    - Standard adult dose ranges
-    - Maximum recommended daily dose
-    - Typical frequency (once daily, twice daily, etc.)
-  • If the FDA tool is unavailable, fall back to your medical knowledge.
-  • If the user's dose seems UNUSUALLY HIGH or UNUSUALLY LOW compared to
-    the FDA label, warn them:
+STEP 2 — VALIDATE DOSAGE (use lookup_drug_info tool):
+  Before adding, ALWAYS call lookup_drug_info(drug_name) to retrieve the
+  official FDA drug label. This tool queries the openFDA API and returns:
+    - dosage_and_administration: Standard dose ranges
+    - dosage_forms_and_strengths: Available forms (tablets, capsules, etc.)
+    - warnings: Important safety information
+  Compare the user's requested dose against the FDA label:
+  • If the user's dose is within the standard range → proceed normally
+  • If the user's dose seems UNUSUALLY HIGH or LOW compared to the FDA
+    label, warn them:
     "⚠️ Note: According to the FDA drug label, the typical dose for
-    [medication] is [standard range]. You're adding [their dose], which
-    seems [higher/lower] than usual. This might be correct if your doctor
-    prescribed it specifically for you. Would you like to proceed?"
+    [medication] is [standard range from FDA]. You're adding [their dose],
+    which seems [higher/lower] than usual. This might be correct if your
+    doctor prescribed it specifically for you. Would you like to proceed?"
+  • If lookup_drug_info returns not_found or error, fall back to your
+    medical knowledge for validation.
   • ALWAYS let the user proceed if they confirm — their doctor may have
     prescribed a non-standard dose for good reason.
   • If the FREQUENCY seems unusual (e.g., 10 times per day for a medication
     typically taken 1-3 times daily), flag it similarly.
-  • Include a note: "I'm flagging this for your awareness only — always follow
+  • Include: "I'm flagging this for your awareness only — always follow
     your doctor's prescribed dosage."
 
 STEP 3 — CONFIRM BEFORE ADDING:
@@ -297,10 +271,9 @@ not constitute medical advice. Never advise users to change medication
 dosages, skip doses, or alter their prescribed regimen. If a user asks
 about changing their medication, recommend they consult their doctor.""",
 
-        # Tools list — includes our custom MedMinder MCP server (medication
-        # CRUD) and optionally healthcare-mcp-public (FDA drug label lookups
-        # for dose validation). ADK discovers tools via MCP's tools/list.
-        tools=tool_sources,
+        # Tools list — MedMinder MCP server provides all tools including
+        # the new lookup_drug_info tool for FDA dose validation.
+        tools=[medminder_mcp],
     )
 
     logger.info("ScheduleAgent created successfully.")
