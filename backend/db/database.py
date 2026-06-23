@@ -77,6 +77,18 @@ class MedMinderDB:
         self.db_path = db_path
         logger.info("MedMinderDB initialized with database path: %s", db_path)
 
+    async def _get_connection(self):
+        """Get a database connection with foreign keys enabled.
+
+        Centralizes the PRAGMA foreign_keys = ON call so future code
+        doesn't need to remember it.  Existing methods still set the
+        pragma inline for safety — new code should prefer this helper.
+        """
+        conn = await aiosqlite.connect(self.db_path)
+        await conn.execute("PRAGMA foreign_keys = ON")
+        conn.row_factory = aiosqlite.Row
+        return conn
+
     # ------------------------------------------------------------------
     # Database Initialization
     # ------------------------------------------------------------------
@@ -283,7 +295,7 @@ class MedMinderDB:
             )
             await db.commit()
 
-        logger.info("Added medication '%s' (id=%s) for user '%s'", name, med_id, user_id)
+        logger.info("Added medication (id=%s) for user.", med_id)
 
         return Medication(
             id=med_id,
@@ -368,7 +380,7 @@ class MedMinderDB:
                 )
             )
 
-        logger.info("Listed %d active medications for user '%s'", len(medications), user_id)
+        logger.info("Listed %d active medication(s) for user.", len(medications))
         return medications
 
     # ------------------------------------------------------------------
@@ -486,9 +498,8 @@ class MedMinderDB:
             await db.commit()
 
         logger.info(
-            "Logged symptom for user '%s': %s (severity=%d)",
-            user_id,
-            description,
+            "Logged symptom (id=%s, severity=%d) for user.",
+            symptom_id,
             severity,
         )
 
@@ -575,8 +586,7 @@ class MedMinderDB:
             )
 
         logger.info(
-            "Generated adherence report for user '%s' (%d days, %d medications)",
-            user_id,
+            "Generated adherence report (%d days, %d medications).",
             days,
             len(reports),
         )
@@ -625,9 +635,8 @@ class MedMinderDB:
         ]
 
         logger.info(
-            "Retrieved %d symptoms for user '%s' (last %d days)",
+            "Retrieved %d symptom(s) (last %d days).",
             len(symptoms),
-            user_id,
             days,
         )
         return symptoms
@@ -689,8 +698,7 @@ class MedMinderDB:
                 )
 
         logger.info(
-            "Retrieved today's schedule for user '%s': %d medications",
-            user_id,
+            "Retrieved today's schedule: %d medication(s).",
             len(schedule),
         )
         return schedule
@@ -828,9 +836,7 @@ class MedMinderDB:
         ]
 
         logger.info(
-            "Generated doctor summary for user '%s' (patient: %s, %d days)",
-            user_id,
-            patient_name,
+            "Generated doctor summary (%d days).",
             days,
         )
 

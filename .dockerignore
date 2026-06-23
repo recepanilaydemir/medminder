@@ -1,0 +1,54 @@
+# =============================================================================
+# MedMinder Docker Ignore
+# Prevents secrets, dev files, and unnecessary data from leaking into images
+# =============================================================================
+
+# Version control
+.git
+.gitignore
+
+# Environment and secrets
+.env
+*.env
+gcp-oauth.keys.json
+credentials.json
+tokens.json
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Database files (may contain PHI)
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing (not needed in production image)
+tests/
+htmlcov/
+.coverage
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation and non-runtime files
+*.md
+LICENSE
+docs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db

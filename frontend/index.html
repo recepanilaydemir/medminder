@@ -11,6 +11,17 @@
   <meta name="description" content="MedMinder — AI-powered medication management assistant. Track medications, log symptoms, and receive intelligent health guidance.">
   <meta name="theme-color" content="#0f172a">
 
+  <!-- Content Security Policy — restricts resource loading to mitigate XSS -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self';
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src https://fonts.gstatic.com;
+                 connect-src 'self';
+                 img-src 'self' data:;
+                 frame-ancestors 'none';">
+
+
   <!-- Open Graph / Social Preview -->
   <meta property="og:title" content="MedMinder — AI-Powered Medication Management Agent">
   <meta property="og:description" content="An intelligent multi-agent system that helps patients manage medications safely through natural conversation. Built with Google ADK, 5 MCP servers, and a privacy-first architecture.">

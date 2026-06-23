@@ -617,6 +617,11 @@ function toggleTrace(messageId) {
  * @returns {string} e.g. "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
  */
 function generateSessionId() {
+  // Use crypto.randomUUID() for cryptographically secure session IDs.
+  // Falls back to Math.random() for older browsers that lack support.
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;

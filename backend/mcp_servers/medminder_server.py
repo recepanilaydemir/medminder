@@ -277,7 +277,7 @@ async def add_medication(
                         "message": f"No FDA drug label found for '{name}'. Verify the name and dosage.",
                     })
             except Exception as e:
-                logger.warning("FDA lookup failed for '%s': %s", name, str(e))
+                logger.warning("FDA lookup failed: %s", str(e))
                 warnings.append({
                     "type": "fda_error",
                     "severity": "info",
@@ -287,8 +287,8 @@ async def add_medication(
         # ─── Return warnings if any found (and not yet confirmed) ────
         if warnings and not confirmed:
             logger.info(
-                "Tool add_medication: %d warning(s) for '%s' — requiring confirmation",
-                len(warnings), name,
+                "Tool add_medication: %d warning(s) — requiring confirmation.",
+                len(warnings),
             )
             return json.dumps({
                 "status": "requires_confirmation",
@@ -317,7 +317,7 @@ async def add_medication(
             notes=notes if notes else None,
         )
 
-        logger.info("Tool add_medication: Added '%s' for user '%s'", name, user_id)
+        logger.info("Tool add_medication: medication added successfully.")
 
         return json.dumps(
             {
@@ -651,7 +651,7 @@ async def log_symptom(
         return json.dumps(
             {
                 "status": "success",
-                "message": f"Symptom logged: {description} (Severity: {label}){warning}",
+                "message": f"Symptom logged (Severity: {label}){warning}",
                 "symptom": symptom.model_dump(),
             },
             indent=2,
@@ -934,7 +934,7 @@ async def lookup_drug_info(drug_name: str) -> str:
     import urllib.parse
     import urllib.error
 
-    logger.info("Tool lookup_drug_info: Looking up '%s' on openFDA", drug_name)
+    logger.info("Tool lookup_drug_info: Looking up drug on openFDA.")
 
     try:
         # Query openFDA drug label API — free, no API key required
@@ -951,7 +951,7 @@ async def lookup_drug_info(drug_name: str) -> str:
             data = json.loads(resp.read().decode())
 
         if not data.get("results"):
-            logger.info("Tool lookup_drug_info: No FDA data found for '%s'", drug_name)
+            logger.info("Tool lookup_drug_info: No FDA data found.")
             return json.dumps({
                 "status": "not_found",
                 "drug_name": drug_name,
@@ -989,10 +989,7 @@ async def lookup_drug_info(drug_name: str) -> str:
             ),
         }
 
-        logger.info(
-            "Tool lookup_drug_info: Found FDA data for '%s' (brand: %s)",
-            drug_name, drug_info.get("brand_name"),
-        )
+        logger.info("Tool lookup_drug_info: FDA data found.")
         return json.dumps(drug_info, indent=2)
 
     except urllib.error.HTTPError as e:

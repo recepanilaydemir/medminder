@@ -1,14 +1,28 @@
-# 💊 MedMinder
+<p align="center">
+  <img src="frontend/img/social-preview.png" alt="MedMinder — AI-Powered Medication Assistant" width="100%">
+</p>
 
-### AI-Powered Medication Management Agent
+<h1 align="center">💊 MedMinder</h1>
 
-> An intelligent multi-agent system that helps patients manage medications safely—tracking schedules, checking drug interactions, monitoring symptoms, and generating doctor-ready reports—all through natural conversation.
+<p align="center">
+  <strong>AI-Powered Medication Management Agent</strong>
+  <br>
+  An intelligent multi-agent system that helps patients manage medications safely—tracking schedules, checking drug interactions, monitoring symptoms, and generating doctor-ready reports—all through natural conversation.
+</p>
 
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
-[![Google ADK](https://img.shields.io/badge/Google-ADK-4285F4?logo=google&logoColor=white)](https://google.github.io/adk-docs/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Track: Concierge](https://img.shields.io/badge/Track-Concierge-purple)](https://www.kaggle.com/)
-[![MCP Servers: 5](https://img.shields.io/badge/MCP_Servers-5_(4%20existing%20%2B%201%20custom)-orange)](https://modelcontextprotocol.io/)
+
+<p align="center">
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white" alt="Python 3.11+"></a>
+  <a href="https://google.github.io/adk-docs/"><img src="https://img.shields.io/badge/Google-ADK-4285F4?logo=google&logoColor=white" alt="Google ADK"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
+  <a href="https://www.kaggle.com/"><img src="https://img.shields.io/badge/Track-Concierge-purple" alt="Track: Concierge"></a>
+  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP_Servers-5_(4%20existing%20%2B%201%20custom)-orange" alt="MCP Servers: 5"></a>
+</p>
+
+---
+
+> [!WARNING]
+> **Security Notice:** MedMinder is a **demo/capstone project** designed for **local, single-user use only**. It does not include user authentication, data encryption at rest, or TLS. Do not deploy to a public network or use with real patient data. See the [Security](#%EF%B8%8F-security) section for details.
 
 ---
 
@@ -158,7 +172,7 @@ The fastest way to get MedMinder running:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/medminder.git
+git clone https://github.com/recepanilaydemir/medminder.git
 cd medminder
 
 # Set your API key (or provide it via the frontend later)

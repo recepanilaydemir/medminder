@@ -125,7 +125,12 @@ def create_schedule_agent() -> LlmAgent:
                 # Pass through the parent process's environment so the
                 # MCP server inherits DB_PATH, API keys, and other config.
                 # This avoids hardcoding configuration in multiple places.
-                env={**os.environ},
+                env={
+                    "PATH": os.environ.get("PATH", ""),
+                    "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY", ""),
+                    "MEDMINDER_DB_PATH": os.environ.get("MEDMINDER_DB_PATH", ""),
+                    "DB_PATH": os.environ.get("DB_PATH", ""),
+                },
             )
         )
     )

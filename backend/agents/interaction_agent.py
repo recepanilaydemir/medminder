@@ -92,7 +92,9 @@ def _create_biomcp_toolset() -> McpToolset | None:
                     # starts the MCP server in stdio mode.
                     command="biomcp",
                     args=["serve"],
-                    env={**os.environ},
+                    env={
+                    "PATH": os.environ.get("PATH", ""),
+                },
                 )
             )
         )
@@ -132,7 +134,9 @@ def _create_drug_interaction_toolset() -> McpToolset | None:
                     # without needing a separate install step.
                     command="uvx",
                     args=["drug-interaction-mcp"],
-                    env={**os.environ},
+                    env={
+                    "PATH": os.environ.get("PATH", ""),
+                },
                 )
             )
         )
@@ -172,7 +176,10 @@ def _create_healthcare_mcp_toolset() -> McpToolset | None:
                     # for non-interactive execution in an agent context.
                     command="npx",
                     args=["-y", "healthcare-mcp"],
-                    env={**os.environ},
+                    env={
+                    "PATH": os.environ.get("PATH", ""),
+                    "NODE_PATH": os.environ.get("NODE_PATH", ""),
+                },
                 )
             )
         )

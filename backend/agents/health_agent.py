@@ -114,7 +114,12 @@ def _create_medminder_toolset() -> McpToolset:
                 command="python",
                 args=[_MCP_SERVER_SCRIPT],
                 # Pass through environment for DB_PATH and other config
-                env={**os.environ},
+                env={
+                    "PATH": os.environ.get("PATH", ""),
+                    "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY", ""),
+                    "MEDMINDER_DB_PATH": os.environ.get("MEDMINDER_DB_PATH", ""),
+                    "DB_PATH": os.environ.get("DB_PATH", ""),
+                },
             )
         )
     )
@@ -140,7 +145,10 @@ def _create_healthcare_mcp_toolset() -> McpToolset | None:
                 server_params=StdioServerParameters(
                     command="npx",
                     args=["-y", "healthcare-mcp"],
-                    env={**os.environ},
+                    env={
+                    "PATH": os.environ.get("PATH", ""),
+                    "NODE_PATH": os.environ.get("NODE_PATH", ""),
+                },
                 )
             )
         )

@@ -76,6 +76,11 @@ COPY README.md .
 # across container restarts and rebuilds.
 RUN mkdir -p /app/data
 
+# Security: run as non-root user
+RUN groupadd -r medminder && useradd -r -g medminder -d /app -s /sbin/nologin medminder \
+    && chown -R medminder:medminder /app/data
+USER medminder
+
 # Expose the FastAPI server port.
 # This is documentation — the actual port binding happens in docker run or
 # docker-compose.yml with the -p flag.

@@ -296,19 +296,39 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # CORS Middleware
 # ---------------------------------------------------------------------------
-# Allow all origins during development so the frontend can talk to the API
-# regardless of how it's served (e.g., file://, localhost:3000, etc.).
-#
-# ⚠️ PRODUCTION WARNING: Restrict `allow_origins` to your actual domain(s)
-# in production. Allowing all origins ("*") means any website can make
-# requests to your API, which is a security risk.
+# Restrict origins to localhost by default for security. Override with the
+# CORS_ORIGINS environment variable for different deployment scenarios.
+# Example: CORS_ORIGINS="https://myapp.com,https://staging.myapp.com"
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict in production
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],  # Allows X-API-Key header from frontend
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
+
+# ---------------------------------------------------------------------------
+# Security Headers Middleware
+# ---------------------------------------------------------------------------
+# Adds basic security headers to all responses to mitigate common web
+# vulnerabilities (clickjacking, MIME-type sniffing, etc.).
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to every response."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 # ---------------------------------------------------------------------------
@@ -446,7 +466,6 @@ async def health_check() -> JSONResponse:
             "status": "healthy",
             "service": "MedMinder API",
             "version": "1.0.0",
-            "api_key_configured": bool(_api_key_store.get("global")),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
@@ -493,7 +512,7 @@ async def set_api_key(config: ConfigRequest) -> JSONResponse:
     _cached_runner = None
     _cached_session_service = None
 
-    logger.info("API key configured successfully (key length: %d chars).", len(config.api_key))
+    logger.info("API key configured successfully.")
 
     return JSONResponse(
         content={
@@ -775,9 +794,8 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
             status_code = 429
         else:
             detail = (
-                f"An error occurred while processing your message: {error_message}\n\n"
-                "This might be a temporary issue. Please try again. If the problem "
-                "persists, check the server logs for more details."
+                "An unexpected error occurred while processing your message. "
+                "Please try again. If the problem persists, check the server logs."
             )
             status_code = 500
 
@@ -855,7 +873,7 @@ async def list_medications(
         logger.error("Error listing medications: %s", str(e))
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to retrieve medications: {str(e)}",
+            detail="Failed to retrieve medications. Please try again.",
         )
 
 
@@ -908,7 +926,7 @@ async def get_todays_schedule(
         logger.error("Error retrieving schedule: %s", str(e))
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to retrieve today's schedule: {str(e)}",
+            detail="Failed to retrieve today's schedule. Please try again.",
         )
 
 
@@ -1010,7 +1028,7 @@ async def log_dose(request: Request, dose_request: DoseLogRequest) -> JSONRespon
         logger.error("Error logging dose: %s", error_message)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to log dose: {error_message}",
+            detail="Failed to log dose. Please try again.",
         )
 
 

@@ -39,7 +39,7 @@ services:
     # Map container port 8000 to host port 8000
     # Access the app at http://localhost:8000
     ports:
-      - '8000:8000'
+      - '127.0.0.1:8000:8000'
 
     # Environment configuration
     # GOOGLE_API_KEY: Passed from host environment (or .env file).
@@ -62,6 +62,15 @@ services:
     # Restart policy — automatically restart the container if it crashes,
     # but not if it was explicitly stopped by the user.
     restart: unless-stopped
+
+    # Security hardening
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
 
     # Health check — Docker Compose will show the container as "healthy"
     # or "unhealthy" based on this check. Useful for orchestration and
