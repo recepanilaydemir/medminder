@@ -133,6 +133,9 @@ class MedMinderDB:
             # ── Dose Logs Table ──────────────────────────────────────
             # Records each dose event. The CHECK constraint on status
             # provides a database-level safety net.
+            # Note: The API layer also accepts 'skipped' as a status,
+            # which is mapped to 'missed' before database insertion.
+            # See server.py POST /api/dose/log for the mapping logic.
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS dose_logs (
                     id             TEXT PRIMARY KEY,

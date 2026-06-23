@@ -107,6 +107,11 @@ function showMainApp() {
 
   // Pre-load data for the current view
   onViewActivated(state.currentView);
+
+  // Start the medication reminder notification engine
+  if (typeof initNotifications === 'function') {
+    initNotifications();
+  }
 }
 
 /**

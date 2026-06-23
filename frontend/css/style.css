@@ -1465,3 +1465,176 @@ ul, ol { list-style: none; }
   font-style: italic;
   margin-top: 1px;
 }
+
+/* =============================================
+   13. Medication Reminder Banners
+   ============================================= */
+
+.reminder-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1500;
+  pointer-events: none;
+  max-width: 400px;
+  width: 100%;
+}
+
+.reminder-banner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: rgba(30, 41, 59, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(20, 184, 166, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(20, 184, 166, 0.12);
+  animation: reminderSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reminder-banner--exit {
+  animation: reminderSlideOut 300ms ease forwards;
+}
+
+.reminder-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.reminder-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-light);
+  margin-bottom: 4px;
+}
+
+.reminder-med {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminder-time {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.reminder-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.reminder-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.reminder-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reminder-btn--take {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: white;
+}
+.reminder-btn--take:hover:not(:disabled) {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.reminder-btn--skip {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.reminder-btn--skip:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.25);
+  color: var(--text);
+}
+
+.reminder-btn--snooze {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.reminder-btn--snooze:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+/* Reminder animations */
+@keyframes reminderSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(120%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes reminderSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(120%) scale(0.85);
+  }
+}
+
+/* Mobile adjustments for reminders */
+@media (max-width: 768px) {
+  .reminder-container {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+
+  .reminder-banner {
+    flex-wrap: wrap;
+  }
+
+  .reminder-actions {
+    flex-direction: row;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .reminder-btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+

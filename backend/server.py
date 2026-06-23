@@ -25,6 +25,7 @@ Endpoints:
     GET  /api/config         — Check whether an API key is currently configured
     GET  /api/medications    — List medications (direct DB query, bypasses agent)
     GET  /api/schedule/today — Get today's schedule (direct DB query)
+    POST /api/dose/log       — Quick dose logging (direct DB, bypasses agent)
     GET  /api/health         — Health check for monitoring
     GET  /                   — Serve the frontend single-page application
 
@@ -182,6 +183,37 @@ class ConfigRequest(BaseModel):
         ...,
         min_length=1,
         description="Google Gemini API key.",
+    )
+
+
+class DoseLogRequest(BaseModel):
+    """Request body for the POST /api/dose/log endpoint.
+
+    Attributes:
+        medication_id: UUID of the medication to log a dose for.
+        status: The dose status — 'taken', 'missed', or 'skipped'.
+                Defaults to 'taken' for quick one-tap logging.
+                Note: 'skipped' is mapped to 'missed' at the database layer
+                since the DB schema doesn't have a separate 'skipped' status.
+        user_id: Identifier for the user. Defaults to 'default_user' for
+                 the single-user demo.
+    """
+
+    medication_id: str = Field(
+        ...,
+        min_length=1,
+        description="UUID of the medication to log a dose for.",
+    )
+    status: str = Field(
+        default="taken",
+        description=(
+            "Dose status: 'taken', 'missed', or 'skipped'. "
+            "Defaults to 'taken'. 'skipped' is treated as 'missed' in the database."
+        ),
+    )
+    user_id: str = Field(
+        default=_DEFAULT_USER_ID,
+        description="User identifier (defaults to 'default_user' for the demo).",
     )
 
 
@@ -877,6 +909,108 @@ async def get_todays_schedule(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve today's schedule: {str(e)}",
+        )
+
+
+# ── Dose Logging ────────────────────────────────────────────────────────────
+@app.post(
+    "/api/dose/log",
+    summary="Log a dose",
+    description=(
+        "Record a dose event (taken, missed, skipped) for a medication. "
+        "This is a quick-action endpoint for the dashboard — it writes directly "
+        "to the database without going through the agent."
+    ),
+    tags=["Dashboard"],
+)
+async def log_dose(request: Request, dose_request: DoseLogRequest) -> JSONResponse:
+    """Log a dose event for a medication directly to the database.
+
+    This endpoint provides a fast path for the frontend's quick-action buttons
+    (e.g., "Mark as taken" or "Skip") without routing through the LLM agent.
+    Like the other Dashboard endpoints, it queries the database directly for
+    speed and reliability.
+
+    Status mapping:
+        - 'taken' → stored as 'taken'
+        - 'missed' → stored as 'missed'
+        - 'skipped' → mapped to 'missed' in the database (the DB schema only
+          supports taken/missed/late, so we treat 'skipped' as a user-friendly
+          alias for 'missed')
+
+    Args:
+        request: FastAPI request (used to access app.state.db).
+        dose_request: The validated dose log request body.
+
+    Returns:
+        JSON response with the created dose log record.
+
+    Raises:
+        HTTPException: 400 if status is invalid, 404 if medication not found.
+    """
+    try:
+        db: MedMinderDB = request.app.state.db
+
+        # Map 'skipped' to 'missed' — the DB CHECK constraint only allows
+        # taken/missed/late. We treat 'skipped' as a UI-friendly alias for
+        # 'missed' (both mean the dose was not taken on schedule).
+        db_status = dose_request.status
+        if db_status == "skipped":
+            db_status = "missed"
+            logger.info(
+                "Mapped status 'skipped' → 'missed' for medication_id=%s",
+                dose_request.medication_id,
+            )
+
+        dose_log = await db.log_dose(
+            medication_id=dose_request.medication_id,
+            status=db_status,
+        )
+
+        logger.info(
+            "Dose logged — medication_id: %s, status: %s (original: %s), user: %s",
+            dose_request.medication_id,
+            db_status,
+            dose_request.status,
+            dose_request.user_id,
+        )
+
+        return JSONResponse(
+            content={
+                "success": True,
+                "dose_log": dose_log.model_dump(),
+                "message": "Dose logged successfully",
+            }
+        )
+
+    except ValueError as e:
+        # Invalid status value — return 400
+        logger.warning("Invalid dose log request: %s", str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid dose log request: {str(e)}",
+        )
+
+    except Exception as e:
+        error_message = str(e)
+        # Check for foreign key / integrity errors (medication not found)
+        if "FOREIGN KEY" in error_message.upper() or "IntegrityError" in error_message:
+            logger.warning(
+                "Medication not found for dose log: medication_id=%s",
+                dose_request.medication_id,
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Medication with id '{dose_request.medication_id}' not found. "
+                    "Please check the medication ID and try again."
+                ),
+            )
+
+        logger.error("Error logging dose: %s", error_message)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to log dose: {error_message}",
         )
 
 

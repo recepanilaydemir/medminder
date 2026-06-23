@@ -2,7 +2,7 @@
 
 > **Framework**: [pytest-bdd](https://pytest-bdd.readthedocs.io/) (Gherkin BDD)  
 > **Runner**: `pytest`  
-> **Last verified**: 2026-06-23 — **45/45 passing** ✅
+> **Last verified**: 2026-06-23 — **53/53 passing** ✅
 
 ---
 
@@ -106,7 +106,26 @@ Tests the transparency/explainability system that shows users which MCP servers 
 
 ---
 
-### 5. Medication Reminders (`medication_reminders.feature`) ⏰
+### 5. Medication Reminder Notifications (`medication_notifications.feature`) 🔔
+
+In-app notification engine that checks the schedule and alerts users when it's time to take medication.
+
+| # | Scenario | What It Tests | Type |
+|---|----------|--------------|------|
+| 1 | Triggers at scheduled time | 08:00 med → reminder fires at 08:00 | Unit |
+| 2 | Triggers within 5-min window | 08:00 med → reminder fires at 08:03 | Unit |
+| 3 | No trigger before time | 14:00 med → no reminder at 13:55 | Unit |
+| 4 | No trigger long after time | 08:00 med → no reminder at 08:10 | Unit |
+| 5 | Deduplication | Already-shown reminder → not repeated | Unit |
+| 6 | Suppresses for taken doses | All doses logged → no reminder | Unit |
+| 7 | Quick dose: Take | "Take" button → dose logged as "taken" | Unit |
+| 8 | Quick dose: Skip | "Skip" button → dose logged as "missed" | Unit |
+
+**Step definitions**: [`test_medication_notifications.py`](tests/step_defs/test_medication_notifications.py)
+
+---
+
+### 6. Medication Reminders (`medication_reminders.feature`) ⏰
 
 Daily schedule generation and completion status tracking.
 
@@ -120,7 +139,7 @@ Daily schedule generation and completion status tracking.
 
 ---
 
-### 6. Health Tracking & Reports (`health_tracking.feature`) 📊
+### 7. Health Tracking & Reports (`health_tracking.feature`) 📊
 
 Symptom logging, adherence reports, and doctor summary generation.
 
@@ -137,7 +156,7 @@ Symptom logging, adherence reports, and doctor summary generation.
 
 ---
 
-### 7. Drug Interactions (`drug_interactions.feature`) ⚠️
+### 8. Drug Interactions (`drug_interactions.feature`) ⚠️
 
 Drug-drug interaction checking via external MCP servers.
 
@@ -150,7 +169,7 @@ Drug-drug interaction checking via external MCP servers.
 
 ---
 
-### 8. Agent Routing (`agent_routing.feature`) 🔀 — *Feature only*
+### 9. Agent Routing (`agent_routing.feature`) 🔀 — *Feature only*
 
 Multi-agent orchestration and message routing. 14 scenarios covering routing to ScheduleAgent, InteractionAgent, HealthAgent, direct orchestrator handling, medical disclaimers, and emergency protocols.
 
@@ -158,7 +177,7 @@ Multi-agent orchestration and message routing. 14 scenarios covering routing to 
 
 ---
 
-### 9. REST API Endpoints (`api_endpoints.feature`) 🌐 — *Feature only*
+### 10. REST API Endpoints (`api_endpoints.feature`) 🌐 — *Feature only*
 
 HTTP API coverage including chat, config, medications, schedule, static files, error handling, and session persistence. 16 scenarios.
 
@@ -175,13 +194,14 @@ Medication Management              6         ✅        PASSING
 Medication Safety Checks          10         ✅        PASSING
 FDA Drug Lookup                    8         ✅        PASSING
 MCP Tool Tracing                  10         ✅        PASSING
+Reminder Notifications             8         ✅        PASSING
 Medication Reminders               3         ✅        PASSING
 Health Tracking & Reports          6         ✅        PASSING
 Drug Interactions                  2         ✅        PASSING
 Agent Routing                     14         📝        FEATURE ONLY
 REST API Endpoints                16         📝        FEATURE ONLY
 ─────────────────────────────────────────────────────────────
-TOTAL                             75         45/75     45 PASSING
+TOTAL                             83         53/83     53 PASSING
 ```
 
 ---
@@ -194,6 +214,7 @@ tests/
 ├── features/                      # Gherkin .feature files (human-readable)
 │   ├── medication_management.feature
 │   ├── medication_safety.feature
+│   ├── medication_notifications.feature
 │   ├── fda_drug_lookup.feature
 │   ├── mcp_tracing.feature
 │   ├── medication_reminders.feature
@@ -204,6 +225,7 @@ tests/
 └── step_defs/                     # Python step definitions
     ├── test_medication_management.py
     ├── test_medication_safety.py
+    ├── test_medication_notifications.py
     ├── test_fda_drug_lookup.py
     ├── test_mcp_tracing.py
     ├── test_medication_reminders.py
