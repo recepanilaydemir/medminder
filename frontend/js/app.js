@@ -352,6 +352,10 @@ async function loadDashboard() {
         renderAdherenceStat('Today', `${loggedDoses}/${totalDoses}`, pct) +
         renderAdherenceStat('Medications', `${scheduleData.length}`, 100) +
         renderAdherenceStat('This Month', '—', 0);
+
+      // Staggered reveal for timeline and stats
+      staggeredReveal('today-timeline', 60);
+      staggeredReveal('adherence-stats', 80);
     } else {
       timelineContainer.innerHTML = renderEmptyState('📅', 'No doses scheduled for today. Add medications to get started.');
       statsContainer.innerHTML = renderEmptyState('📈', 'Adherence data will appear once you start tracking.');
@@ -384,6 +388,9 @@ async function loadMedications() {
       container.innerHTML = state.medications
         .map(med => renderMedicationCard(med))
         .join('');
+
+      // Staggered reveal for medication cards
+      staggeredReveal('medications-list', 50);
     } else {
       container.innerHTML = renderEmptyState(
         '💊',
@@ -430,6 +437,9 @@ async function loadHistory() {
           .map(d => renderDoseEntry(d))
           .join('');
       }
+
+      // Staggered reveal for history entries
+      staggeredReveal('history-list', 40);
     } else {
       const icon = state.historyTab === 'symptoms' ? '📝' : '💊';
       const msg = state.historyTab === 'symptoms'
@@ -643,8 +653,37 @@ function autoResizeTextarea(el) {
   el.style.height = Math.min(el.scrollHeight, 140) + 'px';
 }
 
+/**
+ * Apply staggered entry animations to a container's direct children.
+ * Each child fades/slides in with a progressive delay for a premium feel.
+ *
+ * @param {string} containerId - ID of the parent container.
+ * @param {number} [baseDelay=40] - Milliseconds between each child's animation.
+ */
+function staggeredReveal(containerId, baseDelay = 40) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const children = container.children;
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    child.style.opacity = '0';
+    child.style.transform = 'translateY(12px)';
+    child.style.transition = `opacity 350ms ease ${i * baseDelay}ms, transform 350ms ease ${i * baseDelay}ms`;
+
+    // Trigger reflow then animate in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        child.style.opacity = '1';
+        child.style.transform = 'translateY(0)';
+      });
+    });
+  }
+}
+
 // =============================================================================
 // Bootstrap
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', init);
+
