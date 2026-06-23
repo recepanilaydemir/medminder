@@ -1045,6 +1045,15 @@ if _FRONTEND_DIR.exists():
             StaticFiles(directory=str(_js_dir)),
             name="js_static",
         )
+
+    _img_dir = _FRONTEND_DIR / "img"
+    if _img_dir.exists():
+        app.mount(
+            "/img",
+            StaticFiles(directory=str(_img_dir)),
+            name="img_static",
+        )
+
     logger.info("Frontend static files mounted from: %s", _FRONTEND_DIR)
 else:
     logger.warning(

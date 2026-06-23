@@ -10,18 +10,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="MedMinder — AI-powered medication management assistant. Track medications, log symptoms, and receive intelligent health guidance.">
   <meta name="theme-color" content="#0f172a">
+
+  <!-- Open Graph / Social Preview -->
+  <meta property="og:title" content="MedMinder — AI-Powered Medication Management Agent">
+  <meta property="og:description" content="An intelligent multi-agent system that helps patients manage medications safely through natural conversation. Built with Google ADK, 5 MCP servers, and a privacy-first architecture.">
+  <meta property="og:image" content="img/social-preview.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MedMinder — AI-Powered Medication Management Agent">
+  <meta name="twitter:description" content="Track medications. Check interactions. Generate doctor reports. All through natural conversation.">
+  <meta name="twitter:image" content="img/social-preview.png">
+
   <title>MedMinder — AI Medication Assistant</title>
 
   <!-- Favicon: inline SVG pill icon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💊</text></svg>">
 
-  <!-- Google Fonts: Inter (400, 500, 600, 700) -->
+  <!-- Google Fonts: Inter (UI), Plus Jakarta Sans (Display), Fira Code (Traces) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 
   <!-- Design System -->
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 
 <body>
@@ -33,7 +44,9 @@
     <div id="setup-screen" class="setup-screen">
       <div class="setup-card">
         <!-- Premium icon & branding -->
-        <div class="setup-icon" aria-hidden="true">💊</div>
+        <div class="setup-icon" aria-hidden="true">
+          <img src="img/logo.png" alt="MedMinder logo" width="48" height="48" style="border-radius: 8px;">
+        </div>
         <h1>MedMinder</h1>
         <p class="subtitle">AI-Powered Medication Assistant</p>
 
@@ -87,7 +100,9 @@
       <aside class="sidebar" role="navigation" aria-label="Main navigation">
         <!-- Logo / Brand -->
         <div class="sidebar-logo">
-          <div class="logo-icon" aria-hidden="true">💊</div>
+          <div class="logo-icon" aria-hidden="true">
+            <img src="img/logo.png" alt="" width="28" height="28" style="border-radius: 6px;">
+          </div>
           <h1>MedMinder</h1>
         </div>
 

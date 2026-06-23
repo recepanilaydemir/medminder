@@ -89,10 +89,49 @@ const DEMO_SCRIPT = [
     ],
   },
 
-  // ── Step 3: Navigate to Dashboard ──
+  // ── Step 3: High Dose Safety Warning ──
   {
     type: 'narrate',
-    text: '📊 **Step 2:** Let\'s check the Dashboard to see your schedule and adherence stats.',
+    text: '🛡️ **Step 2:** Now watch what happens when someone enters a dangerously high dose — MedMinder catches it.',
+    delay: 2500,
+  },
+  {
+    type: 'user',
+    text: 'Add Ibuprofen 1200mg three times daily',
+    delay: 1500,
+  },
+  {
+    type: 'agent',
+    text: '🚨 **SAFETY WARNING — High Dose Detected!**\n\nI checked Ibuprofen against the FDA database and found a concern:\n\n❌ **Dose exceeds recommended limit**\n• Your request: 1200mg × 3 = **3600mg/day**\n• FDA maximum daily dose: **3200mg/day** (prescription)\n• OTC recommended max: **1200mg/day**\n\n⚠️ Taking more than the recommended dose of Ibuprofen significantly increases the risk of:\n• Gastrointestinal bleeding\n• Kidney damage\n• Cardiovascular events\n\n**I have NOT added this medication.** Please confirm with your doctor or provide a corrected dose.\n\n⚠️ *Always consult your healthcare provider before starting any medication.*',
+    delay: 3000,
+    trace: [
+      { type: 'text', author: 'Orchestrator', text_preview: 'Routing to ScheduleAgent for medication management' },
+      { type: 'tool_call', author: 'ScheduleAgent', tool_name: 'lookup_drug_info', tool_args: { drug_name: 'Ibuprofen' }, mcp_server: 'MedMinder MCP → openFDA API' },
+      { type: 'tool_response', author: 'ScheduleAgent', tool_name: 'lookup_drug_info', result_preview: 'WARNING: 3600mg/day exceeds FDA max of 3200mg/day. OTC max: 1200mg/day' },
+      { type: 'text', author: 'ScheduleAgent', text_preview: 'Dose rejected — exceeds safe limit. Requesting user confirmation.' },
+    ],
+  },
+  {
+    type: 'user',
+    text: 'Oh sorry, I meant 400mg three times daily. Thank you for catching that!',
+    delay: 2500,
+  },
+  {
+    type: 'agent',
+    text: '✅ **No problem — that\'s exactly what I\'m here for!**\n\nLet me verify the corrected dose:\n• Your request: 400mg × 3 = **1200mg/day**\n• FDA OTC maximum: 1200mg/day ✅\n\n💊 **Ibuprofen Added Successfully:**\n• **Ibuprofen** — 400mg\n• Frequency: Three times daily\n• Scheduled: 08:00 AM, 02:00 PM, 08:00 PM\n\nGlad I could help keep you safe! 🙌\n\n⚠️ *Always follow your prescriber\'s instructions.*',
+    delay: 2800,
+    trace: [
+      { type: 'tool_call', author: 'ScheduleAgent', tool_name: 'lookup_drug_info', tool_args: { drug_name: 'Ibuprofen' }, mcp_server: 'MedMinder MCP → openFDA API' },
+      { type: 'tool_response', author: 'ScheduleAgent', tool_name: 'lookup_drug_info', result_preview: 'OK: 1200mg/day within OTC limit of 1200mg/day' },
+      { type: 'tool_call', author: 'ScheduleAgent', tool_name: 'add_medication', tool_args: { name: 'Ibuprofen', dosage: '400mg', frequency: 'three times daily', times: ['08:00', '14:00', '20:00'] }, mcp_server: 'MedMinder MCP Server' },
+      { type: 'tool_response', author: 'ScheduleAgent', tool_name: 'add_medication', result_preview: 'Medication added: Ibuprofen 400mg' },
+    ],
+  },
+
+  // ── Step 4: Navigate to Dashboard ──
+  {
+    type: 'narrate',
+    text: '📊 **Step 3:** Let\'s check the Dashboard to see your schedule and adherence stats.',
     delay: 2500,
   },
   {
@@ -132,10 +171,10 @@ const DEMO_SCRIPT = [
     delay: 1200,
   },
 
-  // ── Step 4: Show Medications View ──
+  // ── Step 5: Show Medications View ──
   {
     type: 'narrate',
-    text: '💊 **Step 3:** Here\'s your Medications view — all your active medications in one place.',
+    text: '💊 **Step 4:** Here\'s your Medications view — all your active medications in one place.',
     delay: 3000,
   },
   {
@@ -151,16 +190,17 @@ const DEMO_SCRIPT = [
       if (container) {
         container.innerHTML =
           renderMedicationCard({ id: 'demo-1', name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily', times: ['08:00'], active: true }) +
-          renderMedicationCard({ id: 'demo-2', name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', times: ['08:00', '20:00'], active: true });
+          renderMedicationCard({ id: 'demo-2', name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', times: ['08:00', '20:00'], active: true }) +
+          renderMedicationCard({ id: 'demo-3', name: 'Ibuprofen', dosage: '400mg', frequency: 'Three times daily', times: ['08:00', '14:00', '20:00'], active: true });
         staggeredReveal('medications-list', 100);
       }
     },
   },
 
-  // ── Step 5: Drug Interaction Check ──
+  // ── Step 6: Drug Interaction Check ──
   {
     type: 'narrate',
-    text: '⚠️ **Step 4:** Let\'s check for drug interactions — a critical safety feature.',
+    text: '⚠️ **Step 5:** Let\'s check for drug interactions — a critical safety feature.',
     delay: 3000,
   },
   {
@@ -186,10 +226,10 @@ const DEMO_SCRIPT = [
     ],
   },
 
-  // ── Step 6: Symptom Logging ──
+  // ── Step 7: Symptom Logging ──
   {
     type: 'narrate',
-    text: '📝 **Step 5:** MedMinder can also track your symptoms and correlate them with your medications.',
+    text: '📝 **Step 6:** MedMinder can also track your symptoms and correlate them with your medications.',
     delay: 3000,
   },
   {
@@ -208,10 +248,10 @@ const DEMO_SCRIPT = [
     ],
   },
 
-  // ── Step 7: Show Reminder Notification ──
+  // ── Step 8: Show Reminder Notification ──
   {
     type: 'narrate',
-    text: '🔔 **Step 6:** MedMinder sends you timely reminders. Here\'s what a notification looks like:',
+    text: '🔔 **Step 7:** MedMinder sends you timely reminders. Here\'s what a notification looks like:',
     delay: 3000,
   },
   {
@@ -237,7 +277,7 @@ const DEMO_SCRIPT = [
   // ── Conclusion ──
   {
     type: 'narrate',
-    text: '🎉 **That\'s the tour!** MedMinder combines AI-powered medication management with real safety checks via MCP (Model Context Protocol).\n\nKey features you saw:\n• 🔒 FDA drug validation on every add\n• ⚠️ Drug interaction checking (BioMCP + DDInter)\n• 📊 Real-time adherence dashboard\n• 🔔 Smart medication reminders\n• 📝 Symptom tracking & correlation\n• 📡 Full MCP tracing transparency\n\nTo use MedMinder with your own data, close this demo and enter your Gemini API key. Thanks for watching! 🙌',
+    text: '🎉 **That\'s the tour!** MedMinder combines AI-powered medication management with real safety checks via MCP (Model Context Protocol).\n\nKey features you saw:\n• 🔒 FDA drug validation on every add\n• 🛡️ High-dose safety warnings\n• ⚠️ Drug interaction checking (BioMCP + DDInter)\n• 📊 Real-time adherence dashboard\n• 🔔 Smart medication reminders\n• 📝 Symptom tracking & correlation\n• 📡 Full MCP tracing transparency\n\nTo use MedMinder with your own data, close this demo and enter your Gemini API key. Thanks for watching! 🙌',
     delay: 4000,
   },
 ];
@@ -446,15 +486,13 @@ function _createDemoOverlay() {
   if (_demoOverlay) _demoOverlay.remove();
 
   _demoOverlay = document.createElement('div');
-  _demoOverlay.className = 'demo-overlay';
+  _demoOverlay.className = 'demo-fab';
   _demoOverlay.id = 'demo-overlay';
   _demoOverlay.innerHTML = `
-    <div class="demo-badge">
-      <span class="demo-badge-dot"></span>
-      <span>DEMO MODE</span>
-    </div>
-    <button class="demo-exit-btn" onclick="stopDemo()" title="Exit demo">
-      ✕ Exit Demo
+    <span class="demo-fab-dot"></span>
+    <span class="demo-fab-label">DEMO</span>
+    <button class="demo-fab-exit" onclick="stopDemo()" title="Exit demo">
+      ✕
     </button>
   `;
   document.body.appendChild(_demoOverlay);
