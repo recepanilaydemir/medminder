@@ -139,7 +139,7 @@ function renderTracePanel(trace, messageId) {
   const summaryText = summary.length > 0 ? summary.join(' · ') : 'No tools used';
 
   return `
-    <button class="message-trace-toggle" onclick="toggleTrace('${messageId}')" aria-expanded="false" aria-controls="trace-${messageId}">
+    <button class="message-trace-toggle" data-trace-toggle="${messageId}" aria-expanded="false" aria-controls="trace-${messageId}">
       <span class="trace-icon">ℹ️</span>
       <span>${summaryText} · ${trace.length} steps</span>
     </button>

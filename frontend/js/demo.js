@@ -491,7 +491,7 @@ function _createDemoOverlay() {
   _demoOverlay.innerHTML = `
     <span class="demo-fab-dot"></span>
     <span class="demo-fab-label">DEMO</span>
-    <button class="demo-fab-exit" onclick="stopDemo()" title="Exit demo">
+    <button class="demo-fab-exit" data-demo-exit title="Exit demo">
       ✕
     </button>
   `;

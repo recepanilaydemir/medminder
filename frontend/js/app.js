@@ -690,5 +690,24 @@ function staggeredReveal(containerId, baseDelay = 40) {
 // Bootstrap
 // =============================================================================
 
+// Event delegation for dynamically created elements.
+// CSP blocks inline onclick handlers, so we use data-* attributes
+// and a single document-level click listener instead.
+document.addEventListener('click', (e) => {
+  // Handle trace toggle buttons (ℹ️ icon on chat messages)
+  const traceBtn = e.target.closest('[data-trace-toggle]');
+  if (traceBtn) {
+    toggleTrace(traceBtn.getAttribute('data-trace-toggle'));
+    return;
+  }
+
+  // Handle demo exit button (✕ on demo overlay)
+  const exitBtn = e.target.closest('[data-demo-exit]');
+  if (exitBtn) {
+    stopDemo();
+    return;
+  }
+});
+
 document.addEventListener('DOMContentLoaded', init);
 
