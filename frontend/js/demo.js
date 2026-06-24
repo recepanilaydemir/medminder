@@ -540,3 +540,20 @@ function _showDemoComplete() {
     chatInput.placeholder = '🎬 Demo complete — click "Exit Demo" to start for real';
   }
 }
+
+// ─── Event Listeners ─────────────────────────────────────────────
+// Attach click handlers via JS instead of inline onclick attributes
+// to comply with Content Security Policy (script-src 'self').
+document.addEventListener('DOMContentLoaded', () => {
+  const demoBtn = document.getElementById('demo-btn');
+  if (demoBtn) {
+    demoBtn.addEventListener('click', startDemo);
+  }
+
+  const disclaimerClose = document.getElementById('disclaimer-close-btn');
+  if (disclaimerClose) {
+    disclaimerClose.addEventListener('click', () => {
+      disclaimerClose.parentElement.style.display = 'none';
+    });
+  }
+});
