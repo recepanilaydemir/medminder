@@ -80,6 +80,10 @@ RUN groupadd -r medminder && useradd -r -g medminder -d /app -s /sbin/nologin me
     && chown -R medminder:medminder /app/data
 USER medminder
 
+# Set default DB path to the writable data directory.
+# The non-root medminder user owns /app/data but not /app itself.
+ENV DB_PATH=/app/data/medminder.db
+
 # Expose the FastAPI server port.
 # This is documentation — the actual port binding happens in docker run or
 # docker-compose.yml with the -p flag.
