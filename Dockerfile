@@ -69,7 +69,6 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Order matters for cache efficiency — less frequently changed files first.
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
-COPY README.md .
 
 # Create a data directory for the SQLite database.
 # Using a named volume (see docker-compose.yml) means data persists
