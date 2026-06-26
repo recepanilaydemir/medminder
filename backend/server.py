@@ -693,12 +693,7 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
         #   - Tool/function call results
         #   - Sub-agent delegations
         #   - Error events
-        response_parts: list[str] = []
-        tool_response_parts: list[dict] = []  # Fallback: tool results when LLM produces no text
-        trace_events: list[dict] = []  # Capture event trace for transparency
-
         # Map tool names → source MCP server for trace attribution.
-        # This lets the UI show which MCP server provided each tool.
         def _get_mcp_source(tool_name: str) -> str:
             """Resolve which MCP server a tool belongs to."""
             MEDMINDER_TOOLS = {
@@ -728,115 +723,120 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
             else:
                 return "External MCP"
 
-        event_count = 0
-        async for event in runner.run_async(
-            user_id=chat_request.user_id,
-            session_id=session_id,
-            new_message=user_message,
-        ):
-            event_count += 1
-            # Build a base trace entry for every event — records which
-            # sub-agent authored it and when it occurred.
-            trace_entry = {
-                "author": getattr(event, 'author', 'unknown'),
-                "type": "text",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
+        # Retry loop: LLM sometimes returns empty responses (no text, no
+        # tool calls). When this happens, we retry up to MAX_RETRIES times.
+        MAX_RETRIES = 3
+        agent_response = None
 
-            # Log every event for debugging
-            author = getattr(event, 'author', 'unknown')
-            has_content = bool(event.content and event.content.parts)
+        for attempt in range(1, MAX_RETRIES + 1):
+            response_parts: list[str] = []
+            tool_response_parts: list[dict] = []
+            trace_events: list[dict] = []
+
+            event_count = 0
+            async for event in runner.run_async(
+                user_id=chat_request.user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                event_count += 1
+                trace_entry = {
+                    "author": getattr(event, 'author', 'unknown'),
+                    "type": "text",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+
+                author = getattr(event, 'author', 'unknown')
+                has_content = bool(event.content and event.content.parts)
+                logger.info(
+                    "Attempt %d, Event #%d from '%s': has_content=%s, parts=%d",
+                    attempt,
+                    event_count,
+                    author,
+                    has_content,
+                    len(event.content.parts) if event.content and event.content.parts else 0,
+                )
+
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        part_type = "unknown"
+                        if hasattr(part, 'function_call') and part.function_call:
+                            part_type = f"function_call:{part.function_call.name}"
+                        elif hasattr(part, 'function_response') and part.function_response:
+                            part_type = f"function_response:{part.function_response.name}"
+                        elif hasattr(part, 'text') and part.text:
+                            part_type = f"text({len(part.text)} chars)"
+                        logger.info("  Part type: %s", part_type)
+
+                        # ── Function calls (tool invocations) ──
+                        if hasattr(part, 'function_call') and part.function_call:
+                            fc = part.function_call
+                            trace_events.append({
+                                **trace_entry,
+                                "type": "tool_call",
+                                "tool_name": fc.name,
+                                "mcp_server": _get_mcp_source(fc.name),
+                                "tool_args": {
+                                    k: str(v)[:200]
+                                    for k, v in (fc.args or {}).items()
+                                },
+                            })
+                        # ── Function responses (tool results) ──
+                        elif hasattr(part, 'function_response') and part.function_response:
+                            fr = part.function_response
+                            response_text = str(fr.response)[:500] if fr.response else ''
+                            trace_events.append({
+                                **trace_entry,
+                                "type": "tool_response",
+                                "tool_name": fr.name,
+                                "mcp_server": _get_mcp_source(fr.name),
+                                "result_preview": response_text,
+                            })
+                            if fr.response:
+                                tool_response_parts.append({
+                                    "name": fr.name,
+                                    "response": fr.response,
+                                })
+                        # ── Text responses ──
+                        elif hasattr(part, 'text') and part.text:
+                            response_parts.append(part.text)
+                            trace_events.append({
+                                **trace_entry,
+                                "type": "text",
+                                "text_preview": (
+                                    part.text[:200] + ('...' if len(part.text) > 200 else '')
+                                ),
+                            })
+
             logger.info(
-                "Event #%d from '%s': has_content=%s, parts=%d",
+                "Attempt %d done — events: %d, text_parts: %d, tool_responses: %d, trace: %d",
+                attempt,
                 event_count,
-                author,
-                has_content,
-                len(event.content.parts) if event.content and event.content.parts else 0,
+                len(response_parts),
+                len(tool_response_parts),
+                len(trace_events),
             )
 
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    # Log part type for debugging
-                    part_type = "unknown"
-                    if hasattr(part, 'function_call') and part.function_call:
-                        part_type = f"function_call:{part.function_call.name}"
-                    elif hasattr(part, 'function_response') and part.function_response:
-                        part_type = f"function_response:{part.function_response.name}"
-                    elif hasattr(part, 'text') and part.text:
-                        part_type = f"text({len(part.text)} chars)"
-                    logger.info("  Part type: %s", part_type)
+            # Check if we got a usable response
+            if response_parts:
+                agent_response = max(response_parts, key=len)
+                break
+            elif tool_response_parts:
+                agent_response = _extract_tool_response_text(tool_response_parts)
+                break
+            else:
+                # Empty response — retry
+                logger.warning(
+                    "Attempt %d/%d returned empty response, %s",
+                    attempt,
+                    MAX_RETRIES,
+                    "retrying..." if attempt < MAX_RETRIES else "giving up.",
+                )
+                if attempt < MAX_RETRIES:
+                    # Re-send the same message for retry
+                    continue
 
-                    # ── Function calls (tool invocations) ──
-                    if hasattr(part, 'function_call') and part.function_call:
-                        fc = part.function_call
-                        trace_events.append({
-                            **trace_entry,
-                            "type": "tool_call",
-                            "tool_name": fc.name,
-                            "mcp_server": _get_mcp_source(fc.name),
-                            "tool_args": {
-                                k: str(v)[:200]
-                                for k, v in (fc.args or {}).items()
-                            },
-                        })
-                    # ── Function responses (tool results) ──
-                    elif hasattr(part, 'function_response') and part.function_response:
-                        fr = part.function_response
-                        # Truncate response for readability in trace
-                        response_text = str(fr.response)[:500] if fr.response else ''
-                        trace_events.append({
-                            **trace_entry,
-                            "type": "tool_response",
-                            "tool_name": fr.name,
-                            "mcp_server": _get_mcp_source(fr.name),
-                            "result_preview": response_text,
-                        })
-                        # Save full tool response for fallback when LLM
-                        # produces no text (e.g. doctor report generation)
-                        if fr.response:
-                            tool_response_parts.append({
-                                "name": fr.name,
-                                "response": fr.response,
-                            })
-                    # ── Text responses ──
-                    elif hasattr(part, 'text') and part.text:
-                        response_parts.append(part.text)
-                        trace_events.append({
-                            **trace_entry,
-                            "type": "text",
-                            "text_preview": (
-                                part.text[:200] + ('...' if len(part.text) > 200 else '')
-                            ),
-                        })
-                        logger.debug(
-                            "Response part from '%s': %s",
-                            event.author,
-                            part.text[:100] + "..." if len(part.text) > 100 else part.text,
-                        )
-
-        logger.info(
-            "Event loop done — events: %d, text_parts: %d, tool_responses: %d, trace: %d",
-            event_count,
-            len(response_parts),
-            len(tool_response_parts),
-            len(trace_events),
-        )
-
-        # Step 7: Combine all text parts into the final response
-        if response_parts:
-            # Use the longest substantive response. In multi-agent flows,
-            # a sub-agent (e.g. HealthAgent) may produce a detailed report
-            # and then the orchestrator adds a brief routing message.
-            # Taking only the last part loses the report content.
-            agent_response = max(response_parts, key=len)
-        elif tool_response_parts:
-            # No text response but tools returned data. Extract readable
-            # content from the tool response. This handles the doctor
-            # report case where generate_doctor_summary returns structured
-            # JSON but the LLM doesn't produce a text summary.
-            agent_response = _extract_tool_response_text(tool_response_parts)
-        else:
-            # No text response and no tool responses.
+        if agent_response is None:
             agent_response = (
                 "I processed your request, but I don't have a text response. "
                 "This might mean an internal tool was called. Please try rephrasing "
