@@ -123,7 +123,7 @@ def _create_medminder_toolset() -> McpToolset:
                     "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                 },
             ),
-            timeout=30,
+            timeout=60,
         )
     )
 
@@ -155,7 +155,7 @@ def _create_healthcare_mcp_toolset() -> McpToolset | None:
                         "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                     },
                 ),
-                timeout=30,
+                timeout=60,
             )
         )
         logger.info("healthcare-mcp-public toolset available for HealthAgent.")

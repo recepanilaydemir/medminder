@@ -134,7 +134,7 @@ def create_schedule_agent() -> LlmAgent:
                     "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                 },
             ),
-            timeout=30,
+            timeout=60,
         )
     )
 

@@ -98,7 +98,7 @@ def _create_biomcp_toolset() -> McpToolset | None:
                         "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                     },
                 ),
-                timeout=30,
+                timeout=60,
             )
         )
         logger.info("BioMCP toolset created successfully.")
@@ -143,7 +143,7 @@ def _create_drug_interaction_toolset() -> McpToolset | None:
                         "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                     },
                 ),
-                timeout=30,
+                timeout=60,
             )
         )
         logger.info("drug-interaction-mcp toolset created successfully.")
@@ -189,7 +189,7 @@ def _create_healthcare_mcp_toolset() -> McpToolset | None:
                         "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                     },
                 ),
-                timeout=30,
+                timeout=60,
             )
         )
         logger.info("healthcare-mcp-public toolset created successfully.")
