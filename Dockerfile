@@ -82,7 +82,10 @@ USER medminder
 
 # Set default DB path to the writable data directory.
 # The non-root medminder user owns /app/data but not /app itself.
+# DB_PATH is used by backend/config.py (FastAPI server).
+# MEDMINDER_DB_PATH is used by backend/mcp_servers/medminder_server.py (MCP).
 ENV DB_PATH=/app/data/medminder.db
+ENV MEDMINDER_DB_PATH=/app/data/medminder.db
 
 # Expose the FastAPI server port.
 # This is documentation — the actual port binding happens in docker run or
