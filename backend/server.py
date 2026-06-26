@@ -549,17 +549,8 @@ async def get_api_key_status() -> JSONResponse:
     )
 
 
-# ── Chat Endpoint (Core) ────────────────────────────────────────────────────
-@app.post(
-    "/api/chat",
-    summary="Chat with MedMinder",
-    description=(
-        "Send a natural-language message to the MedMinder agent system. "
-        "The agent can manage medications, log doses, track symptoms, "
-        "and generate health reports."
-    ),
-    tags=["Chat"],
-)
+
+# ── Helper: Extract text from tool responses ──────────────────────────────
 
 
 def _extract_tool_response_text(tool_response_parts: list[dict]) -> str:
@@ -615,6 +606,17 @@ def _extract_tool_response_text(tool_response_parts: list[dict]) -> str:
     )
 
 
+# ── Chat Endpoint (Core) ────────────────────────────────────────────────────
+@app.post(
+    "/api/chat",
+    summary="Chat with MedMinder",
+    description=(
+        "Send a natural-language message to the MedMinder agent system. "
+        "The agent can manage medications, log doses, track symptoms, "
+        "and generate health reports."
+    ),
+    tags=["Chat"],
+)
 async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
     """Process a chat message through the ADK multi-agent system.
 
