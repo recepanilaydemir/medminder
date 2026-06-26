@@ -728,11 +728,13 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
             else:
                 return "External MCP"
 
+        event_count = 0
         async for event in runner.run_async(
             user_id=chat_request.user_id,
             session_id=session_id,
             new_message=user_message,
         ):
+            event_count += 1
             # Build a base trace entry for every event — records which
             # sub-agent authored it and when it occurred.
             trace_entry = {
@@ -741,8 +743,29 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
+            # Log every event for debugging
+            author = getattr(event, 'author', 'unknown')
+            has_content = bool(event.content and event.content.parts)
+            logger.info(
+                "Event #%d from '%s': has_content=%s, parts=%d",
+                event_count,
+                author,
+                has_content,
+                len(event.content.parts) if event.content and event.content.parts else 0,
+            )
+
             if event.content and event.content.parts:
                 for part in event.content.parts:
+                    # Log part type for debugging
+                    part_type = "unknown"
+                    if hasattr(part, 'function_call') and part.function_call:
+                        part_type = f"function_call:{part.function_call.name}"
+                    elif hasattr(part, 'function_response') and part.function_response:
+                        part_type = f"function_response:{part.function_response.name}"
+                    elif hasattr(part, 'text') and part.text:
+                        part_type = f"text({len(part.text)} chars)"
+                    logger.info("  Part type: %s", part_type)
+
                     # ── Function calls (tool invocations) ──
                     if hasattr(part, 'function_call') and part.function_call:
                         fc = part.function_call
@@ -790,6 +813,14 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                             event.author,
                             part.text[:100] + "..." if len(part.text) > 100 else part.text,
                         )
+
+        logger.info(
+            "Event loop done — events: %d, text_parts: %d, tool_responses: %d, trace: %d",
+            event_count,
+            len(response_parts),
+            len(tool_response_parts),
+            len(trace_events),
+        )
 
         # Step 7: Combine all text parts into the final response
         if response_parts:
