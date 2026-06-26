@@ -560,6 +560,61 @@ async def get_api_key_status() -> JSONResponse:
     ),
     tags=["Chat"],
 )
+
+
+def _extract_tool_response_text(tool_response_parts: list[dict]) -> str:
+    """Extract readable text from tool responses when the LLM produces none.
+
+    This handles cases where a tool (e.g. generate_doctor_summary) returns
+    structured data but the LLM doesn't produce a text summary. We try to
+    extract the most useful content from the tool response JSON.
+
+    Args:
+        tool_response_parts: List of dicts with 'name' and 'response' keys.
+
+    Returns:
+        Human-readable text extracted from the tool response.
+    """
+    # Try the last substantive tool response (most likely the final result)
+    for tr in reversed(tool_response_parts):
+        raw = tr.get("response", "")
+        name = tr.get("name", "unknown")
+
+        # Skip transfer_to_agent responses (routing, not content)
+        if name == "transfer_to_agent":
+            continue
+
+        # Try to parse as JSON and extract readable fields
+        try:
+            if isinstance(raw, str):
+                data = json.loads(raw)
+            elif isinstance(raw, dict):
+                data = raw
+            else:
+                # Raw non-JSON response — use as-is
+                return str(raw)
+
+            # Doctor report: extract formatted_report
+            if "formatted_report" in data:
+                return data["formatted_report"]
+
+            # Generic success response with message
+            if data.get("status") == "success" and "message" in data:
+                return data["message"]
+
+            # Fallback: pretty-print the JSON
+            return json.dumps(data, indent=2)
+
+        except (json.JSONDecodeError, TypeError, ValueError):
+            # Not JSON — return raw string
+            return str(raw)
+
+    return (
+        "I processed your request, but I don't have a text response. "
+        "Please try rephrasing your question."
+    )
+
+
 async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
     """Process a chat message through the ADK multi-agent system.
 
@@ -637,6 +692,7 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
         #   - Sub-agent delegations
         #   - Error events
         response_parts: list[str] = []
+        tool_response_parts: list[dict] = []  # Fallback: tool results when LLM produces no text
         trace_events: list[dict] = []  # Capture event trace for transparency
 
         # Map tool names → source MCP server for trace attribution.
@@ -701,7 +757,7 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                     # ── Function responses (tool results) ──
                     elif hasattr(part, 'function_response') and part.function_response:
                         fr = part.function_response
-                        # Truncate response for readability
+                        # Truncate response for readability in trace
                         response_text = str(fr.response)[:500] if fr.response else ''
                         trace_events.append({
                             **trace_entry,
@@ -710,6 +766,13 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
                             "mcp_server": _get_mcp_source(fr.name),
                             "result_preview": response_text,
                         })
+                        # Save full tool response for fallback when LLM
+                        # produces no text (e.g. doctor report generation)
+                        if fr.response:
+                            tool_response_parts.append({
+                                "name": fr.name,
+                                "response": fr.response,
+                            })
                     # ── Text responses ──
                     elif hasattr(part, 'text') and part.text:
                         response_parts.append(part.text)
@@ -733,9 +796,14 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
             # and then the orchestrator adds a brief routing message.
             # Taking only the last part loses the report content.
             agent_response = max(response_parts, key=len)
+        elif tool_response_parts:
+            # No text response but tools returned data. Extract readable
+            # content from the tool response. This handles the doctor
+            # report case where generate_doctor_summary returns structured
+            # JSON but the LLM doesn't produce a text summary.
+            agent_response = _extract_tool_response_text(tool_response_parts)
         else:
-            # No text response — this can happen if the agent only made
-            # tool calls without generating a text summary.
+            # No text response and no tool responses.
             agent_response = (
                 "I processed your request, but I don't have a text response. "
                 "This might mean an internal tool was called. Please try rephrasing "
