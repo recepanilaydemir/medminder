@@ -728,10 +728,11 @@ async def chat(request: Request, chat_request: ChatRequest) -> JSONResponse:
 
         # Step 7: Combine all text parts into the final response
         if response_parts:
-            # Use the last substantive response — earlier parts may be
-            # intermediate agent thinking or sub-agent responses that get
-            # refined by the orchestrator.
-            agent_response = response_parts[-1]
+            # Use the longest substantive response. In multi-agent flows,
+            # a sub-agent (e.g. HealthAgent) may produce a detailed report
+            # and then the orchestrator adds a brief routing message.
+            # Taking only the last part loses the report content.
+            agent_response = max(response_parts, key=len)
         else:
             # No text response — this can happen if the agent only made
             # tool calls without generating a text summary.
