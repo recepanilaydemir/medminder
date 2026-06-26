@@ -73,15 +73,21 @@ COPY frontend/ ./frontend/
 # Create a data directory for the SQLite database.
 # Using a named volume (see docker-compose.yml) means data persists
 # across container restarts and rebuilds.
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data /app/.cache /app/.local
 
-# Security: run as non-root user
+# Security: run as non-root user.
+# The medminder user owns /app so that external MCP subprocesses
+# (BioMCP/uvx, npm packages) can write their cache and config files.
 RUN groupadd -r medminder && useradd -r -g medminder -d /app -s /sbin/nologin medminder \
-    && chown -R medminder:medminder /app/data
+    && chown -R medminder:medminder /app
 USER medminder
 
+# Set HOME and cache directories so external MCP subprocesses
+# (uvx, npm, pip) write to the writable /app directory.
+ENV HOME=/app
+ENV XDG_CACHE_HOME=/app/.cache
+
 # Set default DB path to the writable data directory.
-# The non-root medminder user owns /app/data but not /app itself.
 # DB_PATH is used by backend/config.py (FastAPI server).
 # MEDMINDER_DB_PATH is used by backend/mcp_servers/medminder_server.py (MCP).
 ENV DB_PATH=/app/data/medminder.db
