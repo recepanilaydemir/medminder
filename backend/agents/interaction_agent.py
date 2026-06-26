@@ -93,9 +93,12 @@ def _create_biomcp_toolset() -> McpToolset | None:
                     command="biomcp",
                     args=["serve"],
                     env={
-                    "PATH": os.environ.get("PATH", ""),
-                },
-                )
+                        "PATH": os.environ.get("PATH", ""),
+                        "HOME": os.environ.get("HOME", "/tmp"),
+                        "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
+                    },
+                ),
+                timeout=30,
             )
         )
         logger.info("BioMCP toolset created successfully.")
@@ -135,9 +138,12 @@ def _create_drug_interaction_toolset() -> McpToolset | None:
                     command="uvx",
                     args=["drug-interaction-mcp"],
                     env={
-                    "PATH": os.environ.get("PATH", ""),
-                },
-                )
+                        "PATH": os.environ.get("PATH", ""),
+                        "HOME": os.environ.get("HOME", "/tmp"),
+                        "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
+                    },
+                ),
+                timeout=30,
             )
         )
         logger.info("drug-interaction-mcp toolset created successfully.")
@@ -177,10 +183,13 @@ def _create_healthcare_mcp_toolset() -> McpToolset | None:
                     command="npx",
                     args=["-y", "healthcare-mcp"],
                     env={
-                    "PATH": os.environ.get("PATH", ""),
-                    "NODE_PATH": os.environ.get("NODE_PATH", ""),
-                },
-                )
+                        "PATH": os.environ.get("PATH", ""),
+                        "NODE_PATH": os.environ.get("NODE_PATH", ""),
+                        "HOME": os.environ.get("HOME", "/tmp"),
+                        "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
+                    },
+                ),
+                timeout=30,
             )
         )
         logger.info("healthcare-mcp-public toolset created successfully.")

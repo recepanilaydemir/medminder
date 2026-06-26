@@ -130,8 +130,11 @@ def create_schedule_agent() -> LlmAgent:
                     "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY", ""),
                     "MEDMINDER_DB_PATH": os.environ.get("MEDMINDER_DB_PATH", ""),
                     "DB_PATH": os.environ.get("DB_PATH", ""),
+                    "HOME": os.environ.get("HOME", "/tmp"),
+                    "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                 },
-            )
+            ),
+            timeout=30,
         )
     )
 

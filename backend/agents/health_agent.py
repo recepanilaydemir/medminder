@@ -119,8 +119,11 @@ def _create_medminder_toolset() -> McpToolset:
                     "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY", ""),
                     "MEDMINDER_DB_PATH": os.environ.get("MEDMINDER_DB_PATH", ""),
                     "DB_PATH": os.environ.get("DB_PATH", ""),
+                    "HOME": os.environ.get("HOME", "/tmp"),
+                    "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
                 },
-            )
+            ),
+            timeout=30,
         )
     )
 
@@ -146,10 +149,13 @@ def _create_healthcare_mcp_toolset() -> McpToolset | None:
                     command="npx",
                     args=["-y", "healthcare-mcp"],
                     env={
-                    "PATH": os.environ.get("PATH", ""),
-                    "NODE_PATH": os.environ.get("NODE_PATH", ""),
-                },
-                )
+                        "PATH": os.environ.get("PATH", ""),
+                        "NODE_PATH": os.environ.get("NODE_PATH", ""),
+                        "HOME": os.environ.get("HOME", "/tmp"),
+                        "XDG_CACHE_HOME": os.environ.get("XDG_CACHE_HOME", "/tmp/.cache"),
+                    },
+                ),
+                timeout=30,
             )
         )
         logger.info("healthcare-mcp-public toolset available for HealthAgent.")
